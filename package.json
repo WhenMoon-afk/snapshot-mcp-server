@@ -5,9 +5,13 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
+    "install-mcp": "node install.js",
     "build": "tsc",
     "watch": "tsc --watch",
     "prepare": "npm run build"
+  },
+  "bin": {
+    "snapshot-mcp-install": "./install.js"
   },
   "keywords": [
     "mcp",

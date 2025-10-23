@@ -1,36 +1,45 @@
 # Snapshot MCP Server
 
-A Model Context Protocol (MCP) server for managing conversation snapshots. Save your conversation state, resume later with full context - the simplest way to maintain continuity across Claude sessions.
+Save and resume Claude conversations with perfect context preservation. One command to save, one command to resume.
 
-## Features
+## Quick Start
 
-- **Save snapshots** - Capture conversation state with summary, context, and next steps
-- **Load snapshots** - Resume from any saved point with well-formatted prompts
-- **List snapshots** - Browse all saved snapshots with metadata
-- **Delete snapshots** - Clean up old or unwanted snapshots
-- **Persistent storage** - SQLite database ensures snapshots survive restarts
-- **Token efficient** - Optimized for minimal token usage
-
-## Installation
+### One-Command Install
 
 ```bash
+git clone https://github.com/WhenMoon-afk/snapshot-mcp-server.git
+cd snapshot-mcp-server
+npm run install-mcp
+```
+
+That's it! The installer will:
+- Install dependencies and build the project
+- Auto-detect your Claude config location
+- Update your config automatically
+- Set up the database in a sensible location
+
+**Then just restart Claude Desktop and you're ready!**
+
+### Alternative Install (if you prefer manual)
+
+<details>
+<summary>Click to expand manual installation</summary>
+
+```bash
+git clone https://github.com/WhenMoon-afk/snapshot-mcp-server.git
+cd snapshot-mcp-server
 npm install
 npm run build
 ```
 
-## Configuration
-
-Add to your Claude Desktop config file:
-
-**MacOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+Then add to your Claude config (see below for location):
 
 ```json
 {
   "mcpServers": {
     "snapshot": {
       "command": "node",
-      "args": ["/absolute/path/to/snapshot-mcp-server/dist/index.js"],
+      "args": ["/path/to/snapshot-mcp-server/dist/index.js"],
       "env": {
         "SNAPSHOT_DB_PATH": "/path/to/snapshots.db"
       }
@@ -39,135 +48,165 @@ Add to your Claude Desktop config file:
 }
 ```
 
-If `SNAPSHOT_DB_PATH` is not set, the database will be created at `./snapshots.db` relative to the server's working directory.
+**Config locations:**
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
 
-## Tools
+</details>
 
-### save_snapshot
+## Compatibility
 
-Save the current conversation state as a snapshot.
+- ✅ **Claude Desktop** - Full support
+- ✅ **Claude Code (VS Code)** - Full support
+- ❌ **Claude.ai (web)** - Not supported (MCP requires local server)
 
-**Parameters:**
-- `summary` (required, string): Brief summary of what was accomplished
-- `context` (required, string): Full context - code state, decisions, blockers
-- `name` (optional, string): Name for easy retrieval
-- `next_steps` (optional, string): What to do when resuming
+## Usage
 
-**Example:**
-```
-Please save a snapshot with:
-- summary: "Implemented user authentication with JWT"
-- context: "Added login/signup endpoints, JWT middleware, password hashing with bcrypt. Database schema includes users table. All tests passing."
-- name: "auth-complete"
-- next_steps: "Add password reset functionality and email verification"
-```
+### Save Your Work
 
-### load_snapshot
-
-Load a saved snapshot. Defaults to latest if no ID or name provided.
-
-**Parameters:**
-- `id` (optional, number): Snapshot ID to load
-- `name` (optional, string): Snapshot name to load
-
-**Examples:**
-```
-Load latest snapshot
-```
+At the end of any conversation:
 
 ```
-Load snapshot with id 5
-```
-
-```
-Load snapshot named "auth-complete"
-```
-
-**Returns:** Formatted prompt with:
-- Snapshot metadata (ID, name, created date)
-- Summary of what was accomplished
-- Full context to restore state
-- Next steps (if provided)
-
-### list_snapshots
-
-List all saved snapshots with metadata.
-
-**Parameters:**
-- `limit` (optional, number): Maximum snapshots to return (default: 100)
-
-**Example:**
-```
-List all snapshots
-```
-
-```
-List the last 10 snapshots
-```
-
-**Returns:** List of snapshots with ID, name, creation date, and summary.
-
-### delete_snapshot
-
-Delete a snapshot by ID.
-
-**Parameters:**
-- `id` (required, number): Snapshot ID to delete
-
-**Example:**
-```
-Delete snapshot 3
-```
-
-## Usage Examples
-
-### Basic Workflow
-
-**End of session - save your work:**
-```
-Please save a snapshot:
+Save a snapshot with:
 - summary: "Built REST API for blog posts"
-- context: "Created Express server with CRUD endpoints for posts. Using MongoDB with Mongoose schemas. Implemented validation and error handling. Server running on port 3000."
-- next_steps: "Add authentication and authorization for post creation"
+- context: "Created Express server, MongoDB setup, all CRUD endpoints working"
+- next_steps: "Add authentication and rate limiting"
 ```
 
-**Next session - resume instantly:**
+### Resume Instantly
+
+Next conversation:
+
 ```
 Load latest snapshot
 ```
 
-Claude will receive a formatted prompt with all your context, allowing seamless continuation.
+Claude gets all your context back instantly!
 
 ### Named Snapshots
 
-Save important milestones with names:
+Save important milestones:
+
 ```
-Save snapshot:
-- summary: "MVP complete and deployed"
-- context: "Full app deployed to Heroku. All core features working. Database migrations applied. CI/CD pipeline configured."
-- name: "mvp-v1"
-- next_steps: "Start working on user feedback from beta testers"
+Save snapshot named "v1-complete" with summary: "MVP deployed" and context: "App live on Heroku, all features working"
 ```
 
-Later, jump back to this exact point:
+Later:
+
 ```
-Load snapshot named "mvp-v1"
+Load snapshot named "v1-complete"
 ```
 
-### Managing Snapshots
+### Manage Snapshots
 
-Browse your saved work:
 ```
 List all snapshots
 ```
 
-Clean up old snapshots:
 ```
-Delete snapshot 7
+Delete snapshot 5
 ```
 
-## Database Schema
+## What You Get
 
+**4 Simple Tools:**
+- `save_snapshot` - Save current state
+- `load_snapshot` - Resume from any save point
+- `list_snapshots` - See all your snapshots
+- `delete_snapshot` - Clean up old ones
+
+**Smart Defaults:**
+- Loading without ID or name gives you the latest
+- Database location auto-configured per OS
+- Timestamps on everything
+- Fast indexed queries
+
+## Why This Exists
+
+Long Claude conversations lose context across sessions. Copying and pasting summaries is tedious and error-prone. This fixes that:
+
+- **Save:** One command captures everything
+- **Resume:** One command restores full context
+- **Simple:** No complicated memory systems, just snapshots
+- **Reliable:** SQLite ensures nothing gets lost
+
+## Examples
+
+**End of session:**
+```
+I need to stop for today. Save a snapshot:
+- summary: "Implemented user auth with JWT tokens"
+- context: "Login/signup endpoints done, JWT middleware working, bcrypt for passwords, users table created. All tests passing."
+- next_steps: "Add password reset and email verification"
+```
+
+**Tomorrow:**
+```
+Load latest snapshot
+```
+
+Claude responds with formatted prompt containing all your context. You pick up exactly where you left off.
+
+## Troubleshooting
+
+### Server won't start?
+
+1. **Check Node.js version:** `node --version` (need 18+)
+2. **Rebuild:** `npm run build`
+3. **Check config:** Make sure JSON is valid
+4. **Restart Claude:** Fully quit and reopen
+
+### Not seeing the tools?
+
+1. Restart Claude Desktop completely
+2. Check the config file was updated correctly
+3. Verify paths are absolute (not relative)
+
+### Reset everything?
+
+```bash
+cd snapshot-mcp-server
+rm -rf node_modules dist
+npm install
+npm run install-mcp
+```
+
+## Development
+
+**Watch mode:**
+```bash
+npm run watch
+```
+
+**Manual testing:**
+```bash
+npm run build
+node -e "
+import('./dist/database.js').then(({ SnapshotDatabase }) => {
+  const db = new SnapshotDatabase('./test.db');
+  console.log('Saved:', db.saveSnapshot({
+    summary: 'Test',
+    context: 'Testing'
+  }));
+  console.log('Latest:', db.getLatestSnapshot());
+  db.close();
+});
+"
+```
+
+## Technical Details
+
+<details>
+<summary>For the curious</summary>
+
+- **Database:** SQLite with better-sqlite3
+- **Protocol:** MCP SDK 1.0.4
+- **Language:** TypeScript
+- **Storage:** Indexed queries for performance
+- **Config:** Auto-detection for macOS/Windows/Linux
+
+**Database schema:**
 ```sql
 CREATE TABLE snapshots (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -177,154 +216,23 @@ CREATE TABLE snapshots (
   next_steps TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-
-CREATE INDEX idx_snapshots_created_at ON snapshots(created_at DESC);
-CREATE INDEX idx_snapshots_name ON snapshots(name) WHERE name IS NOT NULL;
 ```
 
-## Database Location
+**Default database locations:**
+- macOS: `~/.claude-snapshots/snapshots.db`
+- Windows: `%APPDATA%/claude-snapshots/snapshots.db`
+- Linux: `~/.local/share/claude-snapshots/snapshots.db`
 
-The database file location is determined by:
-1. `SNAPSHOT_DB_PATH` environment variable (if set in config)
-2. `./snapshots.db` (default fallback)
-
-The database and any required parent directories will be created automatically on first run.
-
-## Troubleshooting
-
-### Server won't start
-
-**Check Node.js version:**
-```bash
-node --version  # Should be 18.x or higher
-```
-
-**Verify build:**
-```bash
-cd /path/to/snapshot-mcp-server
-npm run build
-```
-
-**Check permissions:**
-Ensure the database path is writable:
-```bash
-touch /path/to/snapshots.db  # Should succeed
-```
-
-### Database errors
-
-**Reset database (WARNING: deletes all snapshots):**
-```bash
-rm /path/to/snapshots.db
-```
-
-The database will be recreated on next server start.
-
-**Check database integrity:**
-```bash
-sqlite3 /path/to/snapshots.db "PRAGMA integrity_check;"
-```
-
-### Claude Desktop not seeing tools
-
-1. **Restart Claude Desktop** after config changes
-2. **Check config syntax** - use a JSON validator
-3. **Verify absolute paths** - relative paths may not work
-4. **Check server logs** - look in Claude Desktop console
-
-### Common config mistakes
-
-**Wrong (relative path):**
-```json
-"args": ["./dist/index.js"]
-```
-
-**Right (absolute path):**
-```json
-"args": ["/Users/you/projects/snapshot-mcp-server/dist/index.js"]
-```
-
-**Wrong (missing node command):**
-```json
-"command": "dist/index.js"
-```
-
-**Right (node command specified):**
-```json
-"command": "node"
-```
-
-## Development
-
-**Watch mode for development:**
-```bash
-npm run watch
-```
-
-**Manual testing:**
-```bash
-# Build
-npm run build
-
-# Test database operations
-node -e "
-import('./dist/database.js').then(({ SnapshotDatabase }) => {
-  const db = new SnapshotDatabase('./test.db');
-  const snapshot = db.saveSnapshot({
-    summary: 'Test',
-    context: 'Testing the database'
-  });
-  console.log('Saved:', snapshot);
-  console.log('Latest:', db.getLatestSnapshot());
-  db.close();
-});
-"
-```
-
-## Architecture
-
-**Database Layer (`src/database.ts`):**
-- SQLite with better-sqlite3
-- Type-safe interfaces
-- Indexed queries for performance
-- Automatic schema initialization
-
-**MCP Server (`src/index.ts`):**
-- Standard MCP protocol implementation
-- Four tool handlers
-- Error handling and validation
-- Graceful shutdown
-
-## Why Snapshot MCP?
-
-**The problem:** Long Claude conversations lose context across sessions. Copy-pasting summaries is tedious and error-prone.
-
-**The solution:** One command to save state, one command to restore. No manual context management, no lost progress.
-
-**Design philosophy:**
-- **Simplicity:** Core CRUD operations, no over-engineering
-- **Token efficiency:** Concise prompts that restore full context
-- **User experience:** Defaults to latest snapshot for instant resumption
-- **Extensibility:** Clean foundation for future enhancements
-
-## Future Enhancements
-
-Potential additions (not yet implemented):
-- Export/import snapshots as JSON
-- Full-text search across snapshots
-- Snapshot chains (link related snapshots)
-- Automatic snapshot suggestions
-- Diff between snapshots
-- Snapshot tags and categories
-
-## License
-
-MIT License - see LICENSE file for details
+</details>
 
 ## Contributing
 
-Issues and pull requests welcome at: https://github.com/WhenMoon-afk/snapshot-mcp-server
+Issues and PRs welcome! https://github.com/WhenMoon-afk/snapshot-mcp-server
 
-## Author
+## License
 
-WhenMoon-afk
+MIT - See LICENSE file
+
+---
+
+**Made with ❤️ to make Claude conversations continuous**
