@@ -2,16 +2,30 @@
 
 Save and resume Claude conversations with perfect context. Never lose your place again.
 
-## One-Command Install
+## 🚀 Install (Choose One)
+
+### Option 1: Download Installer (Easiest - No Terminal!)
+
+**Just download and double-click:**
+
+- **🍎 macOS:** [Download installer](https://github.com/WhenMoon-afk/snapshot-mcp-server/raw/main/installers/install-macos.command)
+- **🪟 Windows:** [Download installer](https://github.com/WhenMoon-afk/snapshot-mcp-server/raw/main/installers/install-windows.bat)
+- **🐧 Linux:** [Download installer](https://github.com/WhenMoon-afk/snapshot-mcp-server/raw/main/installers/install-linux.sh) → Run: `bash install-linux.sh`
+
+Then restart Claude Desktop and you're ready!
+
+[See detailed platform-specific instructions →](installers/README.md)
+
+### Option 2: One Command (Terminal)
 
 ```bash
 npx @whenmoon-afk/snapshot-mcp-server
 ```
 
-That's it! Then restart Claude Desktop and you're ready.
+That's it! Then restart Claude Desktop.
 
 <details>
-<summary>Alternative: curl one-liner (if you prefer)</summary>
+<summary>Alternative: curl one-liner</summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/WhenMoon-afk/snapshot-mcp-server/main/install-web.sh | bash
@@ -170,16 +184,18 @@ Then manually add to Claude config:
 ### Server won't start?
 
 1. **Check Node.js version:** `node --version` (need 18+)
-2. **Reinstall:** `npx @whenmoon-afk/snapshot-mcp-server`
+2. **Reinstall:** Download installer again or run `npx @whenmoon-afk/snapshot-mcp-server`
 3. Check Claude Desktop logs for errors
+
+### Windows SmartScreen or macOS Gatekeeper warning?
+
+This is normal for downloaded scripts:
+- **Windows:** Click "More info" → "Run anyway"
+- **macOS:** Right-click the file → "Open" → Confirm
 
 ### Reset everything?
 
-```bash
-npx @whenmoon-afk/snapshot-mcp-server
-```
-
-The installer is idempotent - safe to run multiple times.
+Just run the installer again - it's safe to run multiple times.
 
 ## Technical Details
 
@@ -190,7 +206,7 @@ The installer is idempotent - safe to run multiple times.
 - Database: SQLite with better-sqlite3
 - Protocol: MCP SDK 1.0.4
 - Language: TypeScript
-- Installation: Zero-config via npx
+- Installation: Zero-config via npx or downloadable installers
 
 **Database schema:**
 ```sql
