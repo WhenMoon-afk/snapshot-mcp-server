@@ -15,8 +15,16 @@ npm run install-mcp
 That's it! The installer will:
 - Install dependencies and build the project
 - Auto-detect your Claude config location
-- Update your config automatically
+- **Safely** update your config (preserves all existing MCP servers)
+- Create a backup of your config before any changes
 - Set up the database in a sensible location
+- Show you exactly what it's doing every step
+
+**Safe & Transparent:**
+- ✅ Preserves all existing MCP servers in your config
+- ✅ Creates backup before making changes
+- ✅ Shows you exactly what will be added
+- ✅ Lists all MCP servers before and after
 
 **Then just restart Claude Desktop and you're ready!**
 

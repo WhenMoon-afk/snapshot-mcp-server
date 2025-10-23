@@ -67,13 +67,23 @@ try {
   console.log('\n⚙️  Updating Claude Desktop config...');
 
   let config = {};
-  if (existsSync(configPath)) {
+  let configExists = existsSync(configPath);
+
+  if (configExists) {
     try {
       config = JSON.parse(readFileSync(configPath, 'utf8'));
+      console.log('   ✓ Found existing config file');
+
+      // Show existing MCP servers
+      if (config.mcpServers && Object.keys(config.mcpServers).length > 0) {
+        console.log('   ✓ Existing MCP servers:', Object.keys(config.mcpServers).join(', '));
+      }
     } catch (e) {
-      console.log('   Warning: Could not parse existing config, creating new one');
+      console.log('   ⚠️  Warning: Could not parse existing config, creating new one');
+      config = {};
     }
   } else {
+    console.log('   ℹ  No existing config found, creating new one');
     // Create config directory
     const configDir = join(configPath, '..');
     if (!existsSync(configDir)) {
@@ -81,12 +91,12 @@ try {
     }
   }
 
-  // Add or update snapshot server config
+  // Check if snapshot server already exists
   if (!config.mcpServers) {
     config.mcpServers = {};
   }
 
-  config.mcpServers.snapshot = {
+  const snapshotConfig = {
     command: 'node',
     args: [indexPath],
     env: {
@@ -94,8 +104,45 @@ try {
     }
   };
 
+  const alreadyExists = config.mcpServers.snapshot !== undefined;
+
+  if (alreadyExists) {
+    console.log('\n   ℹ  Snapshot server already configured');
+    console.log('   Updating with new configuration...');
+  } else {
+    console.log('\n   ➕ Adding snapshot server to config');
+  }
+
+  // Show what will be added/updated
+  console.log('\n   Configuration to be added:');
+  console.log('   {');
+  console.log('     "mcpServers": {');
+  console.log('       "snapshot": {');
+  console.log(`         "command": "node",`);
+  console.log(`         "args": ["${indexPath}"],`);
+  console.log(`         "env": {`);
+  console.log(`           "SNAPSHOT_DB_PATH": "${dbPath}"`);
+  console.log('         }');
+  console.log('       }');
+  console.log('     }');
+  console.log('   }');
+
+  // Create backup if config exists
+  if (configExists) {
+    const backupPath = configPath + '.backup';
+    writeFileSync(backupPath, JSON.stringify(config, null, 2));
+    console.log(`\n   💾 Backup created: ${backupPath}`);
+  }
+
+  // Update config
+  config.mcpServers.snapshot = snapshotConfig;
+
   // Write config
   writeFileSync(configPath, JSON.stringify(config, null, 2));
+  console.log(`   ✅ Config updated: ${configPath}`);
+
+  // Show final status
+  console.log('\n   Final MCP servers in config:', Object.keys(config.mcpServers).join(', '));
 
   console.log('\n✅ Installation complete!\n');
   console.log('📝 Next steps:');
