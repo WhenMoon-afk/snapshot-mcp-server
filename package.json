@@ -1,23 +1,52 @@
 {
   "name": "@whenmoon-afk/snapshot-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for managing conversation snapshots",
+  "description": "MCP server for managing conversation snapshots - one command setup",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "install-mcp": "node install.js",
     "build": "tsc",
     "watch": "tsc --watch",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "package": "npm run build && pkg . --compress GZip",
+    "package:win": "npm run build && pkg . --targets node18-win-x64 --compress GZip --output releases/snapshot-mcp-installer-windows.exe",
+    "package:mac": "npm run build && pkg . --targets node18-macos-x64,node18-macos-arm64 --compress GZip --output releases/snapshot-mcp-installer-macos",
+    "package:linux": "npm run build && pkg . --targets node18-linux-x64 --compress GZip --output releases/snapshot-mcp-installer-linux",
+    "package:all": "npm run build && pkg . --targets node18-win-x64,node18-macos-x64,node18-macos-arm64,node18-linux-x64 --compress GZip --out-path releases"
   },
-  "bin": {
-    "snapshot-mcp-install": "./install.js"
+  "bin": "./install.js",
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": [
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "outputPath": "releases"
   },
+  "files": [
+    "dist",
+    "src",
+    "install.js",
+    "install.sh",
+    "README.md",
+    "LICENSE",
+    "tsconfig.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WhenMoon-afk/snapshot-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/WhenMoon-afk/snapshot-mcp-server/issues"
+  },
+  "homepage": "https://github.com/WhenMoon-afk/snapshot-mcp-server#readme",
   "keywords": [
     "mcp",
     "snapshot",
     "conversation",
-    "context"
+    "context",
+    "claude",
+    "ai",
+    "model-context-protocol"
   ],
   "author": "WhenMoon-afk",
   "license": "MIT",
@@ -28,6 +57,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.2",
+    "@yao-pkg/pkg": "^5.15.0",
     "typescript": "^5.7.2"
   }
 }

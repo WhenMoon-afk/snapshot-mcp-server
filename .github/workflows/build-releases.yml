@@ -1,0 +1,99 @@
+name: Build Releases
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Package Windows executable
+        run: npm run package:win
+
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-mcp-installer-windows
+          path: releases/snapshot-mcp-installer-windows.exe
+
+      - name: Attach to release
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./releases/snapshot-mcp-installer-windows.exe
+          asset_name: snapshot-mcp-installer-windows.exe
+          asset_content_type: application/octet-stream
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Package macOS executables
+        run: npm run package:mac
+
+      - name: Make executables executable
+        run: chmod +x releases/snapshot-mcp-installer-macos*
+
+      - name: Upload macOS executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-mcp-installer-macos
+          path: releases/snapshot-mcp-installer-macos*
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Package Linux executable
+        run: npm run package:linux
+
+      - name: Make executable
+        run: chmod +x releases/snapshot-mcp-installer-linux
+
+      - name: Upload Linux executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-mcp-installer-linux
+          path: releases/snapshot-mcp-installer-linux
