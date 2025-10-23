@@ -4,19 +4,30 @@ Save and resume Claude conversations with perfect context. Never lose your place
 
 ## 🚀 Install (Choose One)
 
-### Option 1: Download Installer (Easiest - No Terminal!)
+### Option 1: Download Executable (Easiest - ZERO dependencies!)
 
-**Just download and double-click:**
+**Download standalone executable - no Node.js needed:**
+
+- **🪟 Windows:** [Download .exe](https://github.com/WhenMoon-afk/snapshot-mcp-server/releases/latest/download/snapshot-mcp-installer-windows.exe)
+- **🍎 macOS Intel:** [Download](https://github.com/WhenMoon-afk/snapshot-mcp-server/releases/latest/download/snapshot-mcp-installer-macos-x64)
+- **🍎 macOS Apple Silicon:** [Download](https://github.com/WhenMoon-afk/snapshot-mcp-server/releases/latest/download/snapshot-mcp-installer-macos-arm64)
+- **🐧 Linux:** [Download](https://github.com/WhenMoon-afk/snapshot-mcp-server/releases/latest/download/snapshot-mcp-installer-linux)
+
+Just download and run! **No Node.js installation required.**
+
+Then restart Claude Desktop and you're ready!
+
+### Option 2: Download Installer Script (Requires Node.js)
+
+**If you already have Node.js installed:**
 
 - **🍎 macOS:** [Download installer](https://github.com/WhenMoon-afk/snapshot-mcp-server/raw/main/installers/install-macos.command)
 - **🪟 Windows:** [Download installer](https://github.com/WhenMoon-afk/snapshot-mcp-server/raw/main/installers/install-windows.bat)
 - **🐧 Linux:** [Download installer](https://github.com/WhenMoon-afk/snapshot-mcp-server/raw/main/installers/install-linux.sh) → Run: `bash install-linux.sh`
 
-Then restart Claude Desktop and you're ready!
-
 [See detailed platform-specific instructions →](installers/README.md)
 
-### Option 2: One Command (Terminal)
+### Option 3: One Command (Terminal)
 
 ```bash
 npx @whenmoon-afk/snapshot-mcp-server
