@@ -88,6 +88,7 @@ try {
     config.mcpServers = {};
   }
 
+  // Windows requires cmd /c wrapper for npx, but for local install we use node directly
   const snapshotConfig = {
     command: 'node',
     args: [indexPath],

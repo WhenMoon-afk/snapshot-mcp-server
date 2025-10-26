@@ -27,12 +27,16 @@ That's it! The installer automatically configures your Claude Desktop.
 
 If you prefer to configure manually, add to your Claude Desktop config file:
 
-**Location:**
+**Config File Location:**
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
 
 **Configuration:**
+
+<details>
+<summary><strong>macOS/Linux</strong></summary>
+
 ```json
 {
   "mcpServers": {
@@ -43,6 +47,24 @@ If you prefer to configure manually, add to your Claude Desktop config file:
   }
 }
 ```
+</details>
+
+<details>
+<summary><strong>Windows</strong></summary>
+
+```json
+{
+  "mcpServers": {
+    "snapshot": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@whenmoon-afk/snapshot-mcp-server"]
+    }
+  }
+}
+```
+
+**Note:** Windows requires the `cmd /c` wrapper to execute npx properly.
+</details>
 
 Then restart Claude Desktop.
 
