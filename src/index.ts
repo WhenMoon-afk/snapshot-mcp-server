@@ -53,8 +53,37 @@ class SnapshotMCPServer {
                 description: 'Brief summary of what was accomplished',
               },
               context: {
-                type: 'string',
-                description: 'Full context of the conversation - code state, decisions, blockers',
+                oneOf: [
+                  {
+                    type: 'string',
+                    description: 'Full context of the conversation - code state, decisions, blockers',
+                  },
+                  {
+                    type: 'object',
+                    description: 'Structured context with files, decisions, blockers, and code state',
+                    properties: {
+                      files: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        description: 'List of files modified',
+                      },
+                      decisions: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        description: 'Key decisions made',
+                      },
+                      blockers: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        description: 'Current blockers or issues',
+                      },
+                      code_state: {
+                        type: 'object',
+                        description: 'Current state of the code',
+                      },
+                    },
+                  },
+                ],
               },
               name: {
                 type: 'string',
@@ -186,30 +215,33 @@ class SnapshotMCPServer {
       }
     }
 
-    // Format as a prompt-ready text
-    const prompt = [
-      '# Resuming from Snapshot',
-      '',
-      `**Snapshot ID:** ${snapshot.id}`,
-      `**Name:** ${snapshot.name || '(unnamed)'}`,
-      `**Created:** ${snapshot.created_at}`,
-      '',
-      '## Summary',
-      snapshot.summary,
-      '',
-      '## Context',
-      snapshot.context,
-    ];
+    // Use pre-generated continuation prompt if available (token efficient!)
+    // Otherwise generate on-the-fly for backward compatibility with old snapshots
+    let promptText: string;
 
-    if (snapshot.next_steps) {
-      prompt.push('', '## Next Steps', snapshot.next_steps);
+    if (snapshot.continuation_prompt && snapshot.continuation_prompt.trim() !== '') {
+      promptText = snapshot.continuation_prompt;
+    } else {
+      // Backward compatibility: generate prompt for old snapshots
+      const prompt = [
+        `I'm resuming work on: ${snapshot.summary}`,
+        '',
+        '## Current State',
+        snapshot.context,
+      ];
+
+      if (snapshot.next_steps) {
+        prompt.push('', '## Next Steps', snapshot.next_steps);
+      }
+
+      promptText = prompt.join('\n');
     }
 
     return {
       content: [
         {
           type: 'text',
-          text: prompt.join('\n'),
+          text: promptText,
         },
       ],
     };

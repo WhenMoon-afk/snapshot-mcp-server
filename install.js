@@ -3,7 +3,13 @@
 import { execSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { homedir, platform } from 'os';
-import { join, resolve } from 'path';
+import { dirname, join, resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the actual package directory (not user's cwd)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageDir = __dirname;
 
 console.log('🚀 Installing Snapshot MCP Server...\n');
 
@@ -39,14 +45,14 @@ const getDbPath = () => {
 try {
   // Step 1: Install dependencies
   console.log('📦 Installing dependencies...');
-  execSync('npm install', { stdio: 'inherit' });
+  execSync('npm install', { stdio: 'inherit', cwd: packageDir });
 
   // Step 2: Build
   console.log('\n🔨 Building project...');
-  execSync('npm run build', { stdio: 'inherit' });
+  execSync('npm run build', { stdio: 'inherit', cwd: packageDir });
 
   // Step 3: Get paths
-  const projectDir = resolve(process.cwd());
+  const projectDir = resolve(packageDir);
   const indexPath = join(projectDir, 'dist', 'index.js');
   const configPath = getClaudeConfigPath();
   const dbPath = getDbPath();

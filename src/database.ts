@@ -8,14 +8,23 @@ export interface Snapshot {
   summary: string;
   context: string;
   next_steps: string | null;
+  continuation_prompt: string;
   created_at: string;
 }
 
 export interface SaveSnapshotInput {
   name?: string;
   summary: string;
-  context: string;
+  context: string | StructuredContext;
   next_steps?: string;
+}
+
+export interface StructuredContext {
+  files?: string[];
+  decisions?: string[];
+  blockers?: string[];
+  code_state?: Record<string, any>;
+  [key: string]: any;
 }
 
 export class SnapshotDatabase {
@@ -49,19 +58,102 @@ export class SnapshotDatabase {
       CREATE INDEX IF NOT EXISTS idx_snapshots_name
         ON snapshots(name) WHERE name IS NOT NULL;
     `);
+
+    // Migration: Add continuation_prompt column if it doesn't exist
+    const columns = this.db.pragma('table_info(snapshots)') as Array<{ name: string }>;
+    const hasContinuationPrompt = columns.some((col) => col.name === 'continuation_prompt');
+
+    if (!hasContinuationPrompt) {
+      this.db.exec(`
+        ALTER TABLE snapshots ADD COLUMN continuation_prompt TEXT NOT NULL DEFAULT '';
+      `);
+    }
+  }
+
+  private formatStructuredContext(context: string | StructuredContext): string {
+    if (typeof context === 'string') {
+      return context;
+    }
+
+    const parts: string[] = [];
+
+    if (context.files && context.files.length > 0) {
+      parts.push('**Files Modified:**');
+      parts.push(...context.files.map(f => `- ${f}`));
+      parts.push('');
+    }
+
+    if (context.decisions && context.decisions.length > 0) {
+      parts.push('**Key Decisions:**');
+      parts.push(...context.decisions.map(d => `- ${d}`));
+      parts.push('');
+    }
+
+    if (context.blockers && context.blockers.length > 0) {
+      parts.push('**Blockers/Issues:**');
+      parts.push(...context.blockers.map(b => `- ${b}`));
+      parts.push('');
+    }
+
+    if (context.code_state && Object.keys(context.code_state).length > 0) {
+      parts.push('**Code State:**');
+      parts.push(JSON.stringify(context.code_state, null, 2));
+      parts.push('');
+    }
+
+    // Add any other custom fields
+    for (const [key, value] of Object.entries(context)) {
+      if (!['files', 'decisions', 'blockers', 'code_state'].includes(key)) {
+        parts.push(`**${key}:**`);
+        if (typeof value === 'string') {
+          parts.push(value);
+        } else {
+          parts.push(JSON.stringify(value, null, 2));
+        }
+        parts.push('');
+      }
+    }
+
+    return parts.join('\n').trim();
+  }
+
+  private generateContinuationPrompt(summary: string, context: string, next_steps?: string | null): string {
+    const parts: string[] = [
+      `I'm resuming work on: ${summary}`,
+      '',
+      '## Current State',
+      context,
+    ];
+
+    if (next_steps) {
+      parts.push('', '## Next Steps', next_steps);
+    }
+
+    return parts.join('\n');
   }
 
   saveSnapshot(input: SaveSnapshotInput): Snapshot {
+    // Format context (handle both string and structured input)
+    const formattedContext = this.formatStructuredContext(input.context);
+
+    // Generate continuation prompt
+    const continuationPrompt = this.generateContinuationPrompt(
+      input.summary,
+      formattedContext,
+      input.next_steps
+    );
+
     const stmt = this.db.prepare(`
-      INSERT INTO snapshots (name, summary, context, next_steps)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO snapshots (name, summary, context, next_steps, continuation_prompt)
+      VALUES (?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
       input.name || null,
       input.summary,
-      input.context,
-      input.next_steps || null
+      formattedContext,
+      input.next_steps || null,
+      continuationPrompt
     );
 
     return this.getSnapshotById(result.lastInsertRowid as number)!;
