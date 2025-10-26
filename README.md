@@ -1,14 +1,16 @@
 # Snapshot MCP Server
 
-A Model Context Protocol (MCP) server for saving and resuming Claude conversations with perfect context. Never lose your place again.
+A Model Context Protocol (MCP) server for saving and resuming Claude conversations with token-efficient context preservation.
 
 ## What is this?
 
-When you hit conversation limits or need to switch contexts, this MCP server lets you:
-- **Save** your current conversation state with one command
-- **Resume** exactly where you left off in a new conversation
-- **Save tokens** with pre-formatted continuation prompts (~20-30% reduction)
-- **Organize** multiple conversation snapshots with names
+A modular snapshot tool that works standalone or integrates with larger memory systems. Save conversation state, resume work across sessions, and organize multiple snapshots with minimal token overhead.
+
+**Key features:**
+- Token-efficient continuation prompts (~20-30% reduction vs raw context)
+- Structured or simple context input
+- Works with Claude Desktop, Claude Code, Cursor, any MCP client
+- Designed for composability with memory/personality systems
 
 ## Installation
 
@@ -70,183 +72,101 @@ Then restart Claude Desktop.
 
 ## Usage
 
-### Save Your Work
-
-At the end of a conversation:
-
+**Save snapshot:**
 ```
 Save a snapshot with:
-- summary: "Built REST API for blog posts"
-- context: "Express server, MongoDB, all CRUD endpoints working"
-- next_steps: "Add authentication"
+- summary: "Built REST API"
+- context: "Express server, MongoDB, all CRUD working"
+- next_steps: "Add auth"
 ```
 
-### Resume Instantly
-
-In your next conversation:
-
+**Resume work:**
 ```
 Load latest snapshot
 ```
 
-Claude gets all your context back with a pre-formatted, token-efficient prompt.
-
-### Named Snapshots
-
-Save important milestones:
-
+**Named snapshots:**
 ```
-Save snapshot named "v1-complete" with summary: "MVP deployed" and context: "App on Heroku, all features working"
-```
-
-Resume later:
-
-```
+Save snapshot named "v1-complete" with summary: "MVP deployed" and context: "..."
 Load snapshot named "v1-complete"
 ```
 
-### Manage Snapshots
-
+**Manage:**
 ```
 List all snapshots
-```
-
-```
 Delete snapshot 5
 ```
 
 ## Features
 
-### Token Efficiency
+- **Token-efficient prompts** - Pre-generated, optimized continuation prompts
+- **Flexible context** - Simple strings or structured objects
+- **Named snapshots** - Save milestones for easy retrieval
+- **Cross-client** - Works with Claude Desktop, Claude Code, Cursor, etc.
+- **Composable** - Integrates with memory/personality systems
+- **Local storage** - Your data stays on your machine (SQLite)
 
-- **Pre-generated continuation prompts** - Stored once, reused forever
-- **~20-30% token reduction** when resuming conversations
-- No reformatting overhead - prompts ready to use
-
-### Structured Context (Optional)
-
-Use simple strings OR structured data:
-
+**Structured context example:**
 ```
-Save snapshot with:
-- summary: "Completed auth system"
-- context: {
-    files: ["src/auth/jwt.ts", "src/auth/middleware.ts"],
-    decisions: ["Using JWT with 24h expiration", "bcrypt with 10 rounds"],
-    blockers: ["Need email verification"],
-    code_state: { tests_passing: true, coverage: "95%" }
-  }
-- next_steps: "Implement email verification"
+context: {
+  files: ["src/auth.ts"],
+  decisions: ["JWT with 24h expiration"],
+  blockers: ["Need email verification"],
+  code_state: { tests_passing: true }
+}
 ```
 
-### Client Agnostic
+## Tools
 
-Works with any MCP-compatible client:
-- ✅ Claude Desktop
-- ✅ Claude Code (VS Code extension)
-- ✅ Cursor IDE
-- ✅ Any other MCP client
-
-## Available Tools
-
-The server provides 4 tools to Claude:
-
-- **`save_snapshot`** - Save current conversation state
-- **`load_snapshot`** - Resume from a saved snapshot (defaults to latest)
-- **list_snapshots** - View all saved snapshots
-- **`delete_snapshot`** - Remove old snapshots
-
-## Database
-
-Snapshots are stored locally in SQLite:
-
-- **macOS:** `~/.claude-snapshots/snapshots.db`
-- **Windows:** `%APPDATA%/claude-snapshots/snapshots.db`
-- **Linux:** `~/.local/share/claude-snapshots/snapshots.db`
-
-Your data never leaves your machine.
+- `save_snapshot` - Save conversation state
+- `load_snapshot` - Resume from snapshot (latest, by ID, or by name)
+- `list_snapshots` - View all snapshots
+- `delete_snapshot` - Remove snapshots
 
 ## Example Workflow
 
-**Friday evening:**
+**End of day:**
 ```
-I need to stop for today. Save a snapshot:
+Save a snapshot:
 - summary: "Implemented JWT auth"
-- context: "Login/signup endpoints working, JWT middleware done, bcrypt for passwords, tests passing"
-- next_steps: "Add password reset and email verification"
+- context: "Login/signup working, JWT middleware done, tests passing"
+- next_steps: "Add password reset"
 ```
 
-**Monday morning:**
+**Next session:**
 ```
 Load latest snapshot
 ```
 
-Claude responds with your full context and you pick up exactly where you left off.
+Claude resumes with full context.
 
 ## Troubleshooting
 
-### Not seeing the tools?
+**Tools not showing?**
+1. Restart Claude Desktop completely (quit and reopen)
+2. Verify config file is correct
+3. Ensure Node.js 18+ is installed: `node --version`
 
-1. **Restart Claude Desktop completely** (quit and reopen, not just close window)
-2. Check config file is correct
-3. Make sure you have Node.js installed: `node --version` (need 18+)
+**Server issues?**
+- Reinstall: `npx @whenmoon-afk/snapshot-mcp-server`
+- Check client logs for errors
+- Reset: delete config entry and reinstall
 
-### Server won't start?
+## Technical Details
 
-1. Check Node.js version: `node --version` (need 18+)
-2. Try reinstalling: `npx @whenmoon-afk/snapshot-mcp-server`
-3. Check Claude Desktop logs for errors
+**Stack:** SQLite + TypeScript + MCP SDK 1.0.4 (Node.js 18+)
 
-### Reset everything?
+**Database location:**
+- macOS: `~/.claude-snapshots/snapshots.db`
+- Windows: `%APPDATA%/claude-snapshots/snapshots.db`
+- Linux: `~/.local/share/claude-snapshots/snapshots.db`
 
-Delete your config entry and run the installer again - it's safe to run multiple times.
-
-## Development
-
-Want to contribute or run from source?
-
+**Development:**
 ```bash
 git clone https://github.com/WhenMoon-afk/snapshot-mcp-server.git
 cd snapshot-mcp-server
 npm install
 npm run build
-```
-
-Then configure Claude Desktop to use your local copy:
-
-```json
-{
-  "mcpServers": {
-    "snapshot": {
-      "command": "node",
-      "args": ["/absolute/path/to/snapshot-mcp-server/dist/index.js"],
-      "env": {
-        "SNAPSHOT_DB_PATH": "/path/to/snapshots.db"
-      }
-    }
-  }
-}
-```
-
-## Technical Details
-
-**Stack:**
-- Database: SQLite with better-sqlite3
-- Protocol: MCP SDK 1.0.4
-- Language: TypeScript
-- Node.js: 18+
-
-**Database schema:**
-```sql
-CREATE TABLE snapshots (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT,
-  summary TEXT NOT NULL,
-  context TEXT NOT NULL,
-  next_steps TEXT,
-  continuation_prompt TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
 ```
 
 ## License
@@ -259,4 +179,4 @@ Issues and PRs welcome! See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
 
-**Save once. Resume anywhere. Never lose context again.**
+**Modular conversation state for AI assistants.**

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-10-26
+
+### Changed
+- **Token Optimization** - Reduced token usage across all operations
+  - Tool descriptions shortened by ~40 tokens
+  - Parameter descriptions simplified
+  - Response messages condensed (e.g., "Saved snapshot #5" vs verbose multi-line)
+  - Continuation prompt format optimized ("Resuming:" vs "I'm resuming work on:")
+  - List output more compact (one-line format)
+  - Structured context headers simplified (removed markdown bold)
+- **README** - Restructured for clarity and positioned as standalone + composable
+  - Emphasized modular design for integration with memory systems
+  - Reduced length by ~40% while maintaining all essential information
+
+### Performance
+- Additional 15-20 tokens saved per operation on top of existing 20-30% efficiency gains
+- Estimated 150-200 token reduction per typical workflow session
+
 ## [1.0.0] - 2025-10-26
 
 ### Added

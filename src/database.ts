@@ -78,25 +78,25 @@ export class SnapshotDatabase {
     const parts: string[] = [];
 
     if (context.files && context.files.length > 0) {
-      parts.push('**Files Modified:**');
+      parts.push('Files:');
       parts.push(...context.files.map(f => `- ${f}`));
       parts.push('');
     }
 
     if (context.decisions && context.decisions.length > 0) {
-      parts.push('**Key Decisions:**');
+      parts.push('Decisions:');
       parts.push(...context.decisions.map(d => `- ${d}`));
       parts.push('');
     }
 
     if (context.blockers && context.blockers.length > 0) {
-      parts.push('**Blockers/Issues:**');
+      parts.push('Blockers:');
       parts.push(...context.blockers.map(b => `- ${b}`));
       parts.push('');
     }
 
     if (context.code_state && Object.keys(context.code_state).length > 0) {
-      parts.push('**Code State:**');
+      parts.push('Code State:');
       parts.push(JSON.stringify(context.code_state, null, 2));
       parts.push('');
     }
@@ -104,7 +104,7 @@ export class SnapshotDatabase {
     // Add any other custom fields
     for (const [key, value] of Object.entries(context)) {
       if (!['files', 'decisions', 'blockers', 'code_state'].includes(key)) {
-        parts.push(`**${key}:**`);
+        parts.push(`${key}:`);
         if (typeof value === 'string') {
           parts.push(value);
         } else {
@@ -119,14 +119,14 @@ export class SnapshotDatabase {
 
   private generateContinuationPrompt(summary: string, context: string, next_steps?: string | null): string {
     const parts: string[] = [
-      `I'm resuming work on: ${summary}`,
+      `Resuming: ${summary}`,
       '',
-      '## Current State',
+      'Context:',
       context,
     ];
 
     if (next_steps) {
-      parts.push('', '## Next Steps', next_steps);
+      parts.push('', 'Next:', next_steps);
     }
 
     return parts.join('\n');

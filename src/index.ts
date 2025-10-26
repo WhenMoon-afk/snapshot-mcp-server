@@ -18,7 +18,7 @@ class SnapshotMCPServer {
     this.server = new Server(
       {
         name: 'snapshot-mcp-server',
-        version: '1.0.0',
+        version: '1.1.0',
       },
       {
         capabilities: {
@@ -44,42 +44,42 @@ class SnapshotMCPServer {
       tools: [
         {
           name: 'save_snapshot',
-          description: 'Save the current conversation state as a snapshot',
+          description: 'Save current conversation state',
           inputSchema: {
             type: 'object',
             properties: {
               summary: {
                 type: 'string',
-                description: 'Brief summary of what was accomplished',
+                description: 'Summary of work accomplished',
               },
               context: {
                 oneOf: [
                   {
                     type: 'string',
-                    description: 'Full context of the conversation - code state, decisions, blockers',
+                    description: 'Conversation context and state',
                   },
                   {
                     type: 'object',
-                    description: 'Structured context with files, decisions, blockers, and code state',
+                    description: 'Structured context',
                     properties: {
                       files: {
                         type: 'array',
                         items: { type: 'string' },
-                        description: 'List of files modified',
+                        description: 'Files modified',
                       },
                       decisions: {
                         type: 'array',
                         items: { type: 'string' },
-                        description: 'Key decisions made',
+                        description: 'Decisions made',
                       },
                       blockers: {
                         type: 'array',
                         items: { type: 'string' },
-                        description: 'Current blockers or issues',
+                        description: 'Blockers',
                       },
                       code_state: {
                         type: 'object',
-                        description: 'Current state of the code',
+                        description: 'Code state',
                       },
                     },
                   },
@@ -87,11 +87,11 @@ class SnapshotMCPServer {
               },
               name: {
                 type: 'string',
-                description: 'Optional name for easy retrieval',
+                description: 'Optional name',
               },
               next_steps: {
                 type: 'string',
-                description: 'What to do when resuming',
+                description: 'Next steps',
               },
             },
             required: ['summary', 'context'],
@@ -99,43 +99,43 @@ class SnapshotMCPServer {
         },
         {
           name: 'load_snapshot',
-          description: 'Load a saved snapshot (defaults to latest if no ID or name provided)',
+          description: 'Load snapshot by ID, name, or latest',
           inputSchema: {
             type: 'object',
             properties: {
               id: {
                 type: 'number',
-                description: 'Snapshot ID to load',
+                description: 'Snapshot ID',
               },
               name: {
                 type: 'string',
-                description: 'Snapshot name to load',
+                description: 'Snapshot name',
               },
             },
           },
         },
         {
           name: 'list_snapshots',
-          description: 'List all saved snapshots',
+          description: 'List all snapshots',
           inputSchema: {
             type: 'object',
             properties: {
               limit: {
                 type: 'number',
-                description: 'Maximum number of snapshots to return (default: 100)',
+                description: 'Max snapshots (default: 100)',
               },
             },
           },
         },
         {
           name: 'delete_snapshot',
-          description: 'Delete a snapshot by ID',
+          description: 'Delete snapshot by ID',
           inputSchema: {
             type: 'object',
             properties: {
               id: {
                 type: 'number',
-                description: 'Snapshot ID to delete',
+                description: 'Snapshot ID',
               },
             },
             required: ['id'],
@@ -189,7 +189,7 @@ class SnapshotMCPServer {
       content: [
         {
           type: 'text',
-          text: `Snapshot saved successfully!\n\nID: ${snapshot.id}\nName: ${snapshot.name || '(unnamed)'}\nCreated: ${snapshot.created_at}\n\nTo resume this conversation later, use: load_snapshot with id=${snapshot.id}${snapshot.name ? ` or name="${snapshot.name}"` : ''}`,
+          text: `Saved snapshot #${snapshot.id}${snapshot.name ? ` (${snapshot.name})` : ''}`,
         },
       ],
     };
@@ -224,14 +224,14 @@ class SnapshotMCPServer {
     } else {
       // Backward compatibility: generate prompt for old snapshots
       const prompt = [
-        `I'm resuming work on: ${snapshot.summary}`,
+        `Resuming: ${snapshot.summary}`,
         '',
-        '## Current State',
+        'Context:',
         snapshot.context,
       ];
 
       if (snapshot.next_steps) {
-        prompt.push('', '## Next Steps', snapshot.next_steps);
+        prompt.push('', 'Next:', snapshot.next_steps);
       }
 
       promptText = prompt.join('\n');
@@ -261,13 +261,11 @@ class SnapshotMCPServer {
       };
     }
 
-    const lines = ['# Saved Snapshots', ''];
+    const lines = [];
 
     for (const snapshot of snapshots) {
-      lines.push(`## ID: ${snapshot.id}${snapshot.name ? ` - ${snapshot.name}` : ''}`);
-      lines.push(`**Created:** ${snapshot.created_at}`);
-      lines.push(`**Summary:** ${snapshot.summary}`);
-      lines.push('');
+      const namePart = snapshot.name ? ` (${snapshot.name})` : '';
+      lines.push(`#${snapshot.id}${namePart} - ${snapshot.summary} [${snapshot.created_at}]`);
     }
 
     return {
@@ -295,7 +293,7 @@ class SnapshotMCPServer {
       content: [
         {
           type: 'text',
-          text: `Snapshot ${args.id} deleted successfully.`,
+          text: `Deleted snapshot #${args.id}`,
         },
       ],
     };
