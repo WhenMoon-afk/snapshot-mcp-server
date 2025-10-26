@@ -1,69 +1,56 @@
 # Snapshot MCP Server
 
-Save and resume Claude conversations with perfect context. Never lose your place again.
+A Model Context Protocol (MCP) server for saving and resuming Claude conversations with perfect context. Never lose your place again.
 
-## 🚀 Install (Choose One)
+## What is this?
 
-### Option 1: Download Executable (Easiest - ZERO dependencies!)
+When you hit conversation limits or need to switch contexts, this MCP server lets you:
+- **Save** your current conversation state with one command
+- **Resume** exactly where you left off in a new conversation
+- **Save tokens** with pre-formatted continuation prompts (~20-30% reduction)
+- **Organize** multiple conversation snapshots with names
 
-**Download standalone executable - no Node.js needed:**
+## Installation
 
-- **🪟 Windows:** [Download .exe](https://github.com/WhenMoon-afk/snapshot-mcp-server/releases/latest/download/snapshot-mcp-installer-windows.exe)
-- **🍎 macOS Intel:** [Download](https://github.com/WhenMoon-afk/snapshot-mcp-server/releases/latest/download/snapshot-mcp-installer-macos-x64)
-- **🍎 macOS Apple Silicon:** [Download](https://github.com/WhenMoon-afk/snapshot-mcp-server/releases/latest/download/snapshot-mcp-installer-macos-arm64)
-- **🐧 Linux:** [Download](https://github.com/WhenMoon-afk/snapshot-mcp-server/releases/latest/download/snapshot-mcp-installer-linux)
+### Quick Start (Recommended)
 
-Just download and run! **No Node.js installation required.**
-
-Then restart Claude Desktop and you're ready!
-
-### Option 2: Download Installer Script (Requires Node.js)
-
-**If you already have Node.js installed:**
-
-- **🍎 macOS:** [Download installer](https://github.com/WhenMoon-afk/snapshot-mcp-server/raw/main/installers/install-macos.command)
-- **🪟 Windows:** [Download installer](https://github.com/WhenMoon-afk/snapshot-mcp-server/raw/main/installers/install-windows.bat)
-- **🐧 Linux:** [Download installer](https://github.com/WhenMoon-afk/snapshot-mcp-server/raw/main/installers/install-linux.sh) → Run: `bash install-linux.sh`
-
-[See detailed platform-specific instructions →](installers/README.md)
-
-### Option 3: One Command (Terminal)
-
+**Step 1:** Run the installer:
 ```bash
 npx @whenmoon-afk/snapshot-mcp-server
 ```
 
-That's it! Then restart Claude Desktop.
+**Step 2:** Restart Claude Desktop (quit and reopen completely)
 
-<details>
-<summary>Alternative: curl one-liner</summary>
+That's it! The installer automatically configures your Claude Desktop.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/WhenMoon-afk/snapshot-mcp-server/main/install-web.sh | bash
+### Manual Setup
+
+If you prefer to configure manually, add to your Claude Desktop config file:
+
+**Location:**
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+**Configuration:**
+```json
+{
+  "mcpServers": {
+    "snapshot": {
+      "command": "npx",
+      "args": ["-y", "@whenmoon-afk/snapshot-mcp-server"]
+    }
+  }
+}
 ```
 
-</details>
-
-### What the installer does
-
-- ✅ Installs all dependencies automatically
-- ✅ Auto-detects your OS and Claude config location
-- ✅ Preserves all your existing MCP servers
-- ✅ Creates automatic backup of your config
-- ✅ Shows you exactly what it's doing
-- ✅ Sets up database in the right place
-
-**Safe & Transparent:**
-- Shows existing MCP servers before any changes
-- Displays exactly what will be added
-- Creates `config.json.backup` before modifying anything
-- Lists all servers after installation
+Then restart Claude Desktop.
 
 ## Usage
 
 ### Save Your Work
 
-End of any conversation:
+At the end of a conversation:
 
 ```
 Save a snapshot with:
@@ -74,17 +61,17 @@ Save a snapshot with:
 
 ### Resume Instantly
 
-Next conversation:
+In your next conversation:
 
 ```
 Load latest snapshot
 ```
 
-That's it! Claude gets all your context back.
+Claude gets all your context back with a pre-formatted, token-efficient prompt.
 
 ### Named Snapshots
 
-Save milestones:
+Save important milestones:
 
 ```
 Save snapshot named "v1-complete" with summary: "MVP deployed" and context: "App on Heroku, all features working"
@@ -106,32 +93,58 @@ List all snapshots
 Delete snapshot 5
 ```
 
-## Compatibility
+## Features
 
-- ✅ **Claude Desktop** - Full support
-- ✅ **Claude Code (VS Code)** - Full support
-- ❌ **Claude.ai (web)** - Not supported (MCP is local-only)
+### Token Efficiency
 
-## Why This Exists
+- **Pre-generated continuation prompts** - Stored once, reused forever
+- **~20-30% token reduction** when resuming conversations
+- No reformatting overhead - prompts ready to use
 
-**Problem:** Long Claude conversations lose context across sessions. Copy-pasting is tedious.
+### Structured Context (Optional)
 
-**Solution:** One command saves everything. One command restores it.
+Use simple strings OR structured data:
 
-- **Simple:** Just snapshots, nothing complicated
-- **Fast:** One command to save, one to resume
-- **Reliable:** SQLite database, nothing gets lost
-- **Smart:** Loads latest by default
+```
+Save snapshot with:
+- summary: "Completed auth system"
+- context: {
+    files: ["src/auth/jwt.ts", "src/auth/middleware.ts"],
+    decisions: ["Using JWT with 24h expiration", "bcrypt with 10 rounds"],
+    blockers: ["Need email verification"],
+    code_state: { tests_passing: true, coverage: "95%" }
+  }
+- next_steps: "Implement email verification"
+```
 
-## What You Get
+### Client Agnostic
 
-**4 Tools:**
-- `save_snapshot` - Save current state
-- `load_snapshot` - Resume (defaults to latest)
-- `list_snapshots` - See all snapshots
-- `delete_snapshot` - Clean up old ones
+Works with any MCP-compatible client:
+- ✅ Claude Desktop
+- ✅ Claude Code (VS Code extension)
+- ✅ Cursor IDE
+- ✅ Any other MCP client
 
-## Example Session
+## Available Tools
+
+The server provides 4 tools to Claude:
+
+- **`save_snapshot`** - Save current conversation state
+- **`load_snapshot`** - Resume from a saved snapshot (defaults to latest)
+- **list_snapshots** - View all saved snapshots
+- **`delete_snapshot`** - Remove old snapshots
+
+## Database
+
+Snapshots are stored locally in SQLite:
+
+- **macOS:** `~/.claude-snapshots/snapshots.db`
+- **Windows:** `%APPDATA%/claude-snapshots/snapshots.db`
+- **Linux:** `~/.local/share/claude-snapshots/snapshots.db`
+
+Your data never leaves your machine.
+
+## Example Workflow
 
 **Friday evening:**
 ```
@@ -148,12 +161,27 @@ Load latest snapshot
 
 Claude responds with your full context and you pick up exactly where you left off.
 
-## Manual Install (Developers)
+## Troubleshooting
 
-<details>
-<summary>Click to expand</summary>
+### Not seeing the tools?
 
-If you want to clone and develop:
+1. **Restart Claude Desktop completely** (quit and reopen, not just close window)
+2. Check config file is correct
+3. Make sure you have Node.js installed: `node --version` (need 18+)
+
+### Server won't start?
+
+1. Check Node.js version: `node --version` (need 18+)
+2. Try reinstalling: `npx @whenmoon-afk/snapshot-mcp-server`
+3. Check Claude Desktop logs for errors
+
+### Reset everything?
+
+Delete your config entry and run the installer again - it's safe to run multiple times.
+
+## Development
+
+Want to contribute or run from source?
 
 ```bash
 git clone https://github.com/WhenMoon-afk/snapshot-mcp-server.git
@@ -162,11 +190,7 @@ npm install
 npm run build
 ```
 
-Then manually add to Claude config:
-
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-**Linux:** `~/.config/Claude/claude_desktop_config.json`
+Then configure Claude Desktop to use your local copy:
 
 ```json
 {
@@ -182,42 +206,13 @@ Then manually add to Claude config:
 }
 ```
 
-</details>
-
-## Troubleshooting
-
-### Not seeing the tools?
-
-1. **Restart Claude Desktop completely** (quit and reopen, not just close window)
-2. Check config file was updated correctly
-3. Make sure Node.js is installed: `node --version`
-
-### Server won't start?
-
-1. **Check Node.js version:** `node --version` (need 18+)
-2. **Reinstall:** Download installer again or run `npx @whenmoon-afk/snapshot-mcp-server`
-3. Check Claude Desktop logs for errors
-
-### Windows SmartScreen or macOS Gatekeeper warning?
-
-This is normal for downloaded scripts:
-- **Windows:** Click "More info" → "Run anyway"
-- **macOS:** Right-click the file → "Open" → Confirm
-
-### Reset everything?
-
-Just run the installer again - it's safe to run multiple times.
-
 ## Technical Details
-
-<details>
-<summary>For the curious</summary>
 
 **Stack:**
 - Database: SQLite with better-sqlite3
 - Protocol: MCP SDK 1.0.4
 - Language: TypeScript
-- Installation: Zero-config via npx or downloadable installers
+- Node.js: 18+
 
 **Database schema:**
 ```sql
@@ -227,53 +222,18 @@ CREATE TABLE snapshots (
   summary TEXT NOT NULL,
   context TEXT NOT NULL,
   next_steps TEXT,
+  continuation_prompt TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
 
-**Default database locations:**
-- macOS: `~/.claude-snapshots/snapshots.db`
-- Windows: `%APPDATA%/claude-snapshots/snapshots.db`
-- Linux: `~/.local/share/claude-snapshots/snapshots.db`
-
-**Development:**
-```bash
-npm run watch    # Watch mode
-npm run build    # Build TypeScript
-```
-
-</details>
-
-## Publishing to npm (Maintainers)
-
-<details>
-<summary>How to publish updates</summary>
-
-```bash
-# Update version in package.json
-npm version patch  # or minor, or major
-
-# Build
-npm run build
-
-# Publish
-npm publish --access public
-
-# Push tags
-git push --tags
-```
-
-</details>
-
-## Contributing
-
-Issues and PRs welcome!
-
-**Repository:** https://github.com/WhenMoon-afk/snapshot-mcp-server
-
 ## License
 
 MIT
+
+## Contributing
+
+Issues and PRs welcome! See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
 
