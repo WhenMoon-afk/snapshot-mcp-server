@@ -7,3 +7,5 @@ releases/
 .DS_Store
 .env
 *.log
+.claude/
+snapshot-mcp-server/
