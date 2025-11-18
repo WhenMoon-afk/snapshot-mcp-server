@@ -52,6 +52,43 @@ describe('SnapshotDatabase', () => {
     });
   });
 
+  describe('Durability Configuration (Phase 4)', () => {
+    it('should set journal_mode to WAL', () => {
+      // Access the internal database connection to check PRAGMA settings
+      // @ts-ignore - accessing private member for testing
+      const journalMode = db.db.pragma('journal_mode', { simple: true });
+
+      expect(journalMode).toBe('wal');
+    });
+
+    it('should set synchronous to FULL', () => {
+      // @ts-ignore - accessing private member for testing
+      const synchronous = db.db.pragma('synchronous', { simple: true });
+
+      // synchronous=FULL is represented as 2
+      expect(synchronous).toBe(2);
+    });
+
+    it('should persist PRAGMAs across operations', () => {
+      // Save a snapshot
+      const input: SaveSnapshotInput = {
+        summary: 'PRAGMA persistence test',
+        context: 'Verify PRAGMAs remain set after operations',
+      };
+
+      db.saveSnapshot(input);
+
+      // Verify PRAGMAs are still set
+      // @ts-ignore - accessing private member for testing
+      const journalMode = db.db.pragma('journal_mode', { simple: true });
+      // @ts-ignore - accessing private member for testing
+      const synchronous = db.db.pragma('synchronous', { simple: true });
+
+      expect(journalMode).toBe('wal');
+      expect(synchronous).toBe(2);
+    });
+  });
+
   describe('saveSnapshot', () => {
     it('should save snapshot with string context', () => {
       const input: SaveSnapshotInput = {
