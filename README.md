@@ -70,83 +70,9 @@ If you prefer to configure manually, add to your Claude Desktop config file:
 
 Then restart Claude Desktop.
 
-## MCP Client Examples
+## Usage
 
-### Claude Desktop
-
-The recommended setup uses `npx` for automatic updates:
-
-```json
-{
-  "mcpServers": {
-    "snapshot": {
-      "command": "npx",
-      "args": ["-y", "@whenmoon-afk/snapshot-mcp-server"]
-    }
-  }
-}
-```
-
-**Windows:** Use `cmd /c` wrapper:
-```json
-{
-  "mcpServers": {
-    "snapshot": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@whenmoon-afk/snapshot-mcp-server"]
-    }
-  }
-}
-```
-
-### Claude Code on Web / Code Execution
-
-For code-execution environments (Claude Code on Web, automated scripts), the MCP server runs automatically via the MCP host. Snapshots work seamlessly during coding sessions:
-
-**Conceptual usage:**
-```javascript
-// During a coding session, Claude can:
-// 1. Save snapshots at milestones
-await mcp.callTool('save_snapshot', {
-  summary: 'Implemented user auth',
-  context: { files: ['src/auth.ts'], tests_passing: true },
-  next_steps: 'Add password reset'
-});
-
-// 2. Resume work in next session
-await mcp.callTool('load_snapshot', {}); // Loads latest
-```
-
-The MCP host handles configuration and transport automatically.
-
-### Generic MCP Host
-
-For custom MCP clients or host applications:
-
-```json
-{
-  "mcpServers": {
-    "snapshot": {
-      "command": "node",
-      "args": ["/path/to/snapshot-mcp-server/dist/index.js"],
-      "env": {
-        "SNAPSHOT_DB_PATH": "/path/to/custom/snapshots.db"
-      }
-    }
-  }
-}
-```
-
-**Environment variables:**
-- `SNAPSHOT_DB_PATH`: Custom database location (optional)
-
-**Transport:** stdio (stdin/stdout communication)
-
-## Quick Start Workflow
-
-Once installed, try these commands in Claude:
-
-**1. Save your first snapshot:**
+**Save snapshot:**
 ```
 Save a snapshot with:
 - summary: "Built REST API"
@@ -154,27 +80,18 @@ Save a snapshot with:
 - next_steps: "Add auth"
 ```
 
-**2. Resume from latest snapshot:**
+**Resume work:**
 ```
 Load latest snapshot
 ```
 
-**3. List all snapshots:**
-```
-List all snapshots
-```
-
-That's it! Claude will preserve your conversation context across sessions.
-
-## Usage Examples
-
-**Named snapshots for milestones:**
+**Named snapshots:**
 ```
 Save snapshot named "v1-complete" with summary: "MVP deployed" and context: "..."
 Load snapshot named "v1-complete"
 ```
 
-**Manage snapshots:**
+**Manage:**
 ```
 List all snapshots
 Delete snapshot 5
@@ -225,70 +142,15 @@ Claude resumes with full context.
 
 ## Troubleshooting
 
-### Tools not appearing in Claude Desktop
+**Tools not showing?**
+1. Restart Claude Desktop completely (quit and reopen)
+2. Verify config file is correct
+3. Ensure Node.js 18+ is installed: `node --version`
 
-1. **Restart completely:** Quit Claude Desktop entirely and reopen (don't just close window)
-2. **Verify config file location:**
-   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-   - Linux: `~/.config/Claude/claude_desktop_config.json`
-3. **Check Node.js version:** Run `node --version` (must be 18+)
-4. **Verify config syntax:** Ensure JSON is valid (no trailing commas, proper quotes)
-
-### Server errors or crashes
-
-- **Reinstall:** Run `npx @whenmoon-afk/snapshot-mcp-server` again
-- **Check logs:** Look for errors in Claude Desktop developer console
-- **Database permissions:** Ensure write access to database directory
-- **Reset config:** Delete the `snapshot` entry from config and reinstall
-
-### Database issues
-
-**Database location not found:**
-- Check `SNAPSHOT_DB_PATH` environment variable in config
-- Verify directory exists and has write permissions
-- Default paths:
-  - macOS: `~/.claude-snapshots/`
-  - Windows: `%APPDATA%/claude-snapshots/`
-  - Linux: `~/.local/share/claude-snapshots/`
-
-**Corrupted database:**
-- Backup: `cp ~/.claude-snapshots/snapshots.db ~/snapshots-backup.db`
-- Delete: `rm ~/.claude-snapshots/snapshots.db`
-- Reinstall: Server will create fresh database on next run
-
-### Node version mismatch
-
-If you see errors about unsupported Node.js features:
-1. Check version: `node --version`
-2. Upgrade if needed: Visit https://nodejs.org/
-3. Required: Node.js 18 or higher
-
-## FAQ
-
-**Q: Do I need to authenticate or set up an account?**
-A: No. The server runs locally on your machine with no authentication required. Your data stays on your computer.
-
-**Q: Where is my data stored?**
-A: Snapshots are stored in a local SQLite database. See "Database location" in Technical Details section. You can customize the location with the `SNAPSHOT_DB_PATH` environment variable.
-
-**Q: Can I use this with Claude Code on Web?**
-A: Yes! The MCP host in code-execution environments handles configuration automatically. Just use snapshot commands normally during coding sessions.
-
-**Q: Is my data sent to the cloud?**
-A: No. All snapshot data is stored locally on your machine. There is no cloud sync or external data transmission.
-
-**Q: What happens if I lose my database file?**
-A: Your snapshots will be lost. Consider backing up `~/.claude-snapshots/` periodically if you have important snapshots.
-
-**Q: Can I use this with multiple projects?**
-A: Yes. You can either use named snapshots to organize by project, or configure multiple MCP server entries with different `SNAPSHOT_DB_PATH` values for separate databases per project.
-
-**Q: How do I backup or export snapshots?**
-A: Copy the database file: `cp ~/.claude-snapshots/snapshots.db ~/backup-location/`. You can also use SQLite tools to export data: `sqlite3 ~/.claude-snapshots/snapshots.db .dump > snapshots.sql`
-
-**Q: What about security and authentication for shared/cloud deployments?**
-A: See [SECURITY.md](SECURITY.md) for deployment postures including OAuth 2.1 support for multi-user environments.
+**Server issues?**
+- Reinstall: `npx @whenmoon-afk/snapshot-mcp-server`
+- Check client logs for errors
+- Reset: delete config entry and reinstall
 
 ## Technical Details
 
