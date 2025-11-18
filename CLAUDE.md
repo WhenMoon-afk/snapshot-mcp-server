@@ -49,13 +49,30 @@ npm run watch
 # Useful for active development
 ```
 
-### Testing (Future)
+### Testing
 ```bash
-# Run tests (not yet implemented)
+# Run all tests once
 npm test
 
-# See Phase 6 in projectplan.md for testing roadmap
+# Watch mode (auto-rerun on changes)
+npm run test:watch
+
+# Interactive UI
+npm run test:ui
+
+# Coverage report (requires @vitest/coverage-v8)
+npm run test:coverage
 ```
+
+**Test Framework:** Vitest 4.0.10
+**Test Count:** 47 tests (23 database + 24 MCP tool)
+**Test Files:** src/database.test.ts, src/index.test.ts
+
+**Notes:**
+- Tests use isolated temporary databases (no production DB interference)
+- All tests should pass in ~4 seconds
+- Exit code 139 (segfault) may occur after tests complete - this is a known better-sqlite3 cleanup issue and does not affect test validity
+- See .claude-phases/phase2summary.md for detailed test documentation
 
 ### Install Snapshot Server (Local Testing)
 ```bash
@@ -339,10 +356,11 @@ SELECT * FROM snapshots;
 
 ### Before Pushing
 1. Run `npm run build` to verify compilation
-2. Check for TypeScript errors
-3. Update .claude-phases documentation
-4. Create phase summary and verification files
-5. Write clear commit messages
+2. Run `npm test` to verify all tests pass
+3. Check for TypeScript errors
+4. Update .claude-phases documentation
+5. Create phase summary and verification files
+6. Write clear commit messages
 
 ### After Pushing
 1. Human creates PR on GitHub
@@ -379,6 +397,9 @@ npm install
 # Build project
 npm run build
 
+# Run tests
+npm test
+
 # Watch for changes
 npm run watch
 
@@ -399,11 +420,11 @@ sqlite3 ~/.claude-snapshots/snapshots.db
 - **.claude-phases/projectplan.md:** Architecture and roadmap
 
 ### Current Phase
-- **Phase:** 1 (Baseline Analysis)
+- **Phase:** 2 (Test QA Harness)
 - **Status:** Complete
-- **Next:** Phase 2 (SQLite Durability)
-- **Branch:** claude/phase-1-baseline-011qKuoQL17BXJMqBAkjryxh
+- **Next:** Phase 3 (SQLite Durability)
+- **Branch:** claude/phase-2-tests-01Ap4yyZq6JmMHpv7d9k1xFx
 
 ---
 
-**Last Updated:** 2025-11-17 (Phase 1 Completion)
+**Last Updated:** 2025-11-18 (Phase 2 Completion)

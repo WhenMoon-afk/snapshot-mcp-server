@@ -7,7 +7,11 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "bin": "./install.js",
   "files": [
@@ -43,6 +47,8 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "@vitest/ui": "^4.0.10",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.10"
   }
 }
