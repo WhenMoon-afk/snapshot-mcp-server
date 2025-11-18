@@ -6,6 +6,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { SnapshotDatabase } from './database.js';
 import { MCPError, ErrorCode } from './mcp-error.js';
+import { NoAuthPolicy, DummyAuthPolicy, getScopeForTool, TOOL_SCOPES } from './authorization.js';
 import { unlinkSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -1086,6 +1087,189 @@ describe('MCP Tool Handlers', () => {
       expect(result.content[0].type).toBe('text');
       expect(result.content[0].text).toMatch(/^Error:/);
       expect(result.content[0].text).toContain('Code:');
+    });
+  });
+
+  describe('Authorization Hooks (Phase 6)', () => {
+    /**
+     * These tests verify authorization policy integration.
+     * Phase 6 adds optional authorization hooks that are backward compatible.
+     * Default NoAuthPolicy always authorizes (preserves current local desktop behavior).
+     * Future OAuthPolicy will validate JWT tokens and enforce scopes.
+     *
+     * See docs/mcp-authorization-options.md for architecture details.
+     */
+
+    describe('NoAuthPolicy (Default)', () => {
+      it('should always authorize requests', async () => {
+        const policy = new NoAuthPolicy();
+
+        const result = await policy.authorize({
+          toolName: 'save_snapshot',
+          headers: {},
+          arguments: {},
+        });
+
+        expect(result.authorized).toBe(true);
+        expect(result.userId).toBeUndefined();
+        expect(result.scopes).toBeUndefined();
+        expect(result.error).toBeUndefined();
+      });
+
+      it('should authorize all tool names', async () => {
+        const policy = new NoAuthPolicy();
+        const tools = ['save_snapshot', 'load_snapshot', 'list_snapshots', 'delete_snapshot'];
+
+        for (const toolName of tools) {
+          const result = await policy.authorize({
+            toolName,
+            headers: {},
+            arguments: {},
+          });
+
+          expect(result.authorized).toBe(true);
+        }
+      });
+
+      it('should not require authorization headers', async () => {
+        const policy = new NoAuthPolicy();
+
+        // No headers at all
+        const result1 = await policy.authorize({
+          toolName: 'save_snapshot',
+          arguments: {},
+        });
+        expect(result1.authorized).toBe(true);
+
+        // Empty headers
+        const result2 = await policy.authorize({
+          toolName: 'save_snapshot',
+          headers: {},
+          arguments: {},
+        });
+        expect(result2.authorized).toBe(true);
+      });
+    });
+
+    describe('DummyAuthPolicy (Testing)', () => {
+      it('should reject requests without authorization header', async () => {
+        const policy = new DummyAuthPolicy();
+
+        const result = await policy.authorize({
+          toolName: 'save_snapshot',
+          headers: {},
+          arguments: {},
+        });
+
+        expect(result.authorized).toBe(false);
+        expect(result.error).toBe('missing_token');
+        expect(result.errorDescription).toContain('Authorization header is required');
+      });
+
+      it('should reject requests with invalid bearer scheme', async () => {
+        const policy = new DummyAuthPolicy();
+
+        const result = await policy.authorize({
+          toolName: 'save_snapshot',
+          headers: {
+            authorization: 'Basic abc123',
+          },
+          arguments: {},
+        });
+
+        expect(result.authorized).toBe(false);
+        expect(result.error).toBe('invalid_token');
+        expect(result.errorDescription).toContain('Bearer scheme');
+      });
+
+      it('should reject requests with invalid token', async () => {
+        const policy = new DummyAuthPolicy();
+
+        const result = await policy.authorize({
+          toolName: 'save_snapshot',
+          headers: {
+            authorization: 'Bearer invalid-token',
+          },
+          arguments: {},
+        });
+
+        expect(result.authorized).toBe(false);
+        expect(result.error).toBe('invalid_token');
+        expect(result.errorDescription).toContain('validation failed');
+      });
+
+      it('should authorize requests with valid token', async () => {
+        const policy = new DummyAuthPolicy();
+
+        const result = await policy.authorize({
+          toolName: 'save_snapshot',
+          headers: {
+            authorization: 'Bearer valid-token',
+          },
+          arguments: {},
+        });
+
+        expect(result.authorized).toBe(true);
+        expect(result.userId).toBe('test-user-123');
+        expect(result.scopes).toContain('snapshot:read');
+        expect(result.scopes).toContain('snapshot:write');
+      });
+
+      it('should authorize all tools with valid token', async () => {
+        const policy = new DummyAuthPolicy();
+        const tools = ['save_snapshot', 'load_snapshot', 'list_snapshots', 'delete_snapshot'];
+
+        for (const toolName of tools) {
+          const result = await policy.authorize({
+            toolName,
+            headers: {
+              authorization: 'Bearer valid-token',
+            },
+            arguments: {},
+          });
+
+          expect(result.authorized).toBe(true);
+          expect(result.userId).toBe('test-user-123');
+        }
+      });
+    });
+
+    describe('Scope Mapping', () => {
+      it('should define correct scopes for each tool', () => {
+        expect(TOOL_SCOPES['save_snapshot']).toBe('snapshot:write');
+        expect(TOOL_SCOPES['load_snapshot']).toBe('snapshot:read');
+        expect(TOOL_SCOPES['list_snapshots']).toBe('snapshot:read');
+        expect(TOOL_SCOPES['delete_snapshot']).toBe('snapshot:delete');
+      });
+
+      it('should return correct scope for each tool via helper', () => {
+        expect(getScopeForTool('save_snapshot')).toBe('snapshot:write');
+        expect(getScopeForTool('load_snapshot')).toBe('snapshot:read');
+        expect(getScopeForTool('list_snapshots')).toBe('snapshot:read');
+        expect(getScopeForTool('delete_snapshot')).toBe('snapshot:delete');
+      });
+
+      it('should default to snapshot:read for unknown tools', () => {
+        expect(getScopeForTool('unknown_tool')).toBe('snapshot:read');
+      });
+    });
+
+    describe('Backward Compatibility', () => {
+      /**
+       * Verify that authorization hooks are fully backward compatible.
+       * The default NoAuthPolicy ensures existing functionality is preserved.
+       */
+      it('should not break existing tool calls (NoAuthPolicy default)', async () => {
+        // TestableSnapshotMCPServer uses default NoAuthPolicy (no auth required)
+        // All existing tests pass, proving backward compatibility
+
+        const result = await server.callTool('save_snapshot', {
+          summary: 'Test backward compatibility',
+          context: 'Authorization hooks should not break existing behavior',
+        });
+
+        expect(result.content[0].text).toContain('Saved snapshot');
+      });
     });
   });
 });

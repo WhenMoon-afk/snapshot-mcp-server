@@ -7,15 +7,18 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { SnapshotDatabase, SaveSnapshotInput } from './database.js';
 import { MCPError, ErrorCode } from './mcp-error.js';
+import { AuthorizationPolicy, NoAuthPolicy, ToolCallContext } from './authorization.js';
 
 const DB_PATH = process.env.SNAPSHOT_DB_PATH || './snapshots.db';
 
 class SnapshotMCPServer {
   private server: Server;
   private db: SnapshotDatabase;
+  private authPolicy: AuthorizationPolicy;
 
-  constructor() {
+  constructor(authPolicy?: AuthorizationPolicy) {
     this.db = new SnapshotDatabase(DB_PATH);
+    this.authPolicy = authPolicy || new NoAuthPolicy();
     this.server = new Server(
       {
         name: 'snapshot-mcp-server',
@@ -66,6 +69,34 @@ class SnapshotMCPServer {
     }
 
     parts.push(`Code: ${error.code}`);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: parts.join('\n'),
+        },
+      ],
+    };
+  }
+
+  /**
+   * Format an authorization error for MCP response.
+   * Returns a structured error message compatible with OAuth 2.1 error format.
+   *
+   * In a future HTTP-based MCP implementation, this could also set:
+   * - Status code: 401 Unauthorized or 403 Forbidden
+   * - WWW-Authenticate header with error details
+   */
+  private formatAuthorizationError(authResult: { error?: string; errorDescription?: string; requiredScope?: string }): { content: Array<{ type: string; text: string }> } {
+    const errorCode = authResult.error || 'unauthorized';
+    const description = authResult.errorDescription || 'Authorization failed';
+
+    const parts = ['Authorization Error', `Code: ${errorCode}`, `Details: ${description}`];
+
+    if (authResult.requiredScope) {
+      parts.push(`Required scope: ${authResult.requiredScope}`);
+    }
 
     return {
       content: [
@@ -185,17 +216,26 @@ class SnapshotMCPServer {
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
-      // **Future OAuth 2.1 Integration Point:**
-      // When OAuth is enabled, validate access token here:
-      // 1. Extract access token from request headers (Authorization: Bearer <token>)
-      // 2. Validate token signature and expiration
-      // 3. Verify token audience matches this server's resource identifier
-      // 4. Check required scopes for the requested tool:
-      //    - save_snapshot: 'snapshot:write'
-      //    - load_snapshot: 'snapshot:read'
-      //    - list_snapshots: 'snapshot:read'
-      //    - delete_snapshot: 'snapshot:delete'
-      // 5. If validation fails, return 401 with WWW-Authenticate header
+      // **OAuth 2.1 Authorization Hook (Phase 6):**
+      // Check authorization policy before executing tool handler.
+      // Default NoAuthPolicy always authorizes (preserves current behavior).
+      // Future OAuthPolicy will validate JWT tokens, check scopes, etc.
+      // See docs/mcp-authorization-options.md for details.
+      const authContext: ToolCallContext = {
+        toolName: name,
+        headers: (request as any).headers, // MCP SDK may add headers in future
+        arguments: args,
+      };
+
+      const authResult = await this.authPolicy.authorize(authContext);
+
+      if (!authResult.authorized) {
+        // Return authorization error
+        return this.formatAuthorizationError(authResult);
+      }
+
+      // Authorization successful - proceed with tool execution
+      // (authResult.userId can be used for per-user database isolation in future)
 
       try {
         switch (name) {

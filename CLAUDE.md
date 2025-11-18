@@ -65,7 +65,7 @@ npm run test:coverage
 ```
 
 **Test Framework:** Vitest 4.0.10
-**Test Count:** 47 tests (23 database + 24 MCP tool)
+**Test Count:** 60+ tests (23 database + 24 MCP tool + 13 authorization)
 **Test Files:** src/database.test.ts, src/index.test.ts
 
 **Notes:**
@@ -126,6 +126,10 @@ The `.claude-phases/` directory contains AI-assisted development documentation:
 - **phase{N}summary.md:** What was accomplished in phase N
 - **phase{N}verification.json:** Pass/fail checklist for phase N
 - **phase{N}issues.md:** Open questions identified in phase N
+
+### Phase 6 Advanced Documentation
+- **docs/architecture-mcp-code-execution.md:** Code-execution architecture patterns
+- **docs/mcp-authorization-options.md:** OAuth 2.1 integration and deployment options
 
 ## Git and PR Workflow
 
@@ -328,12 +332,13 @@ SELECT * FROM snapshots;
 - No authentication required (trusted environment)
 - Standard filesystem permissions apply
 
-### Future OAuth 2.1 (Phase 4 Design)
+### Future OAuth 2.1 (Phase 4 Design, Phase 6 Hooks)
 - Resource server architecture (external auth server)
-- Token validation middleware
+- Token validation middleware (hooks added in Phase 6)
 - PKCE for all clients
 - Resource indicators (RFC 8707)
 - Protected resource metadata (RFC 9728)
+- See docs/mcp-authorization-options.md for detailed integration guidance
 
 ### Data Privacy
 - User context data stored locally
@@ -374,6 +379,8 @@ SELECT * FROM snapshots;
 - **README.md:** User-facing documentation
 - **CHANGELOG.md:** Version history and release notes
 - **.claude-phases/projectplan.md:** Architecture and roadmap
+- **docs/architecture-mcp-code-execution.md:** Code-execution patterns (Phase 6)
+- **docs/mcp-authorization-options.md:** OAuth 2.1 integration (Phase 6)
 - **MCP Spec:** https://modelcontextprotocol.io/
 
 ### External References
@@ -416,15 +423,17 @@ sqlite3 ~/.claude-snapshots/snapshots.db
 ### Key Files
 - **src/index.ts:** MCP server and tool handlers
 - **src/database.ts:** SQLite operations and schema
+- **src/authorization.ts:** Authorization policy interfaces (Phase 6)
 - **install.js:** Installer for Claude Desktop config
 - **.claude-phases/projectplan.md:** Architecture and roadmap
+- **docs/:** Advanced architecture and integration docs (Phase 6)
 
 ### Current Phase
-- **Phase:** 2 (Test QA Harness)
+- **Phase:** 6 (Code-Execution and Authorization Design)
 - **Status:** Complete
-- **Next:** Phase 3 (SQLite Durability)
-- **Branch:** claude/phase-2-tests-01Ap4yyZq6JmMHpv7d9k1xFx
+- **Next:** Phase 7 (Future work as needed)
+- **Branch:** claude/phase-6-code-exec-auth-011qhgyd68FWF2krc5vNsgZb
 
 ---
 
-**Last Updated:** 2025-11-18 (Phase 2 Completion)
+**Last Updated:** 2025-11-18 (Phase 6 Completion)

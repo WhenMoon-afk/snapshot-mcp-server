@@ -288,7 +288,10 @@ A: Yes. You can either use named snapshots to organize by project, or configure 
 A: Copy the database file: `cp ~/.claude-snapshots/snapshots.db ~/backup-location/`. You can also use SQLite tools to export data: `sqlite3 ~/.claude-snapshots/snapshots.db .dump > snapshots.sql`
 
 **Q: What about security and authentication for shared/cloud deployments?**
-A: See [SECURITY.md](SECURITY.md) for deployment postures including OAuth 2.1 support for multi-user environments.
+A: See [SECURITY.md](SECURITY.md) for deployment postures including OAuth 2.1 support for multi-user environments. Also see [docs/mcp-authorization-options.md](docs/mcp-authorization-options.md) for detailed integration guidance.
+
+**Q: Can I use this with code-execution environments or generate TypeScript clients?**
+A: Yes! See [docs/architecture-mcp-code-execution.md](docs/architecture-mcp-code-execution.md) for architecture patterns, generated client examples, and orchestration workflows.
 
 ## Technical Details
 

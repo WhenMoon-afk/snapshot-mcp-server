@@ -283,9 +283,12 @@ The Model Context Protocol will support OAuth 2.1 authorization for multi-user a
 ### Timeline
 
 - **Now:** Local trusted desktop mode only (no auth)
-- **Phase 4 (Design):** OAuth 2.1 integration design and positioning
+- **Phase 4 (Complete):** OAuth 2.1 integration design and positioning
+- **Phase 6 (Complete):** Authorization hooks and code-execution architecture
 - **Post June 2025:** Implementation after MCP spec finalization
 - **Future:** Multi-user, cloud deployment, audit logging
+
+See [docs/mcp-authorization-options.md](docs/mcp-authorization-options.md) for detailed integration guidance.
 
 ## Reporting Security Issues
 
@@ -311,6 +314,13 @@ If you discover a security vulnerability in the Snapshot MCP Server, please repo
 
 ## Additional Resources
 
+### Documentation
+
+- **[MCP Authorization Options](docs/mcp-authorization-options.md)** - OAuth 2.1 integration design, deployment models, and authorization hooks (Phase 6)
+- **[Code-Execution Architecture](docs/architecture-mcp-code-execution.md)** - Using this MCP server in code-execution environments with generated clients (Phase 6)
+
+### External Resources
+
 - [MCP Specification](https://modelcontextprotocol.io/)
 - [OAuth 2.1 Overview](https://oauth.net/2.1/)
 - [SQLite Security](https://www.sqlite.org/security.html)
@@ -318,4 +328,4 @@ If you discover a security vulnerability in the Snapshot MCP Server, please repo
 
 ---
 
-**Last Updated:** 2025-11-18 (Phase 3 Documentation)
+**Last Updated:** 2025-11-18 (Phase 6: Code-execution and authorization design)
