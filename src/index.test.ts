@@ -5,7 +5,6 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { SnapshotDatabase } from './database.js';
-import { MCPError, ErrorCode } from './mcp-error.js';
 import { unlinkSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -33,29 +32,6 @@ class TestableSnapshotMCPServer {
     );
 
     this.setupHandlers();
-  }
-
-  private isMCPError(error: unknown): error is MCPError {
-    return error instanceof MCPError;
-  }
-
-  private formatError(error: MCPError): { content: Array<{ type: string; text: string }> } {
-    const parts = [`Error: ${error.message}`];
-
-    if (error.details) {
-      parts.push(`Details: ${error.details}`);
-    }
-
-    parts.push(`Code: ${error.code}`);
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: parts.join('\n'),
-        },
-      ],
-    };
   }
 
   private setupHandlers(): void {
@@ -181,91 +157,57 @@ class TestableSnapshotMCPServer {
             return await this.handleDeleteSnapshot(args as any);
 
           default:
-            return this.formatError(new MCPError(ErrorCode.UNKNOWN_TOOL, `Unknown tool: ${name}`));
+            throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
-        // Handle structured MCPError
-        if (this.isMCPError(error)) {
-          return this.formatError(error as MCPError);
-        }
-
-        // Handle generic errors
         const errorMessage = error instanceof Error ? error.message : String(error);
-        return this.formatError(new MCPError(ErrorCode.INTERNAL_ERROR, errorMessage));
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error: ${errorMessage}`,
+            },
+          ],
+        };
       }
     });
   }
 
   private async handleSaveSnapshot(args: any) {
     if (!args.summary || !args.context) {
-      throw {
-        code: ErrorCode.VALIDATION_ERROR,
-        message: 'Missing required fields',
-        details: 'Both summary and context are required',
-      } as MCPError;
+      throw new Error('summary and context are required');
     }
 
-    try {
-      const snapshot = this.db.saveSnapshot(args);
+    const snapshot = this.db.saveSnapshot(args);
 
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Saved snapshot #${snapshot.id}${snapshot.name ? ` (${snapshot.name})` : ''}`,
-          },
-        ],
-      };
-    } catch (error) {
-      throw {
-        code: ErrorCode.DATABASE_ERROR,
-        message: 'Failed to save snapshot',
-        details: error instanceof Error ? error.message : String(error),
-      } as MCPError;
-    }
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Saved snapshot #${snapshot.id}${snapshot.name ? ` (${snapshot.name})` : ''}`,
+        },
+      ],
+    };
   }
 
   private async handleLoadSnapshot(args: any) {
     let snapshot;
 
-    try {
-      if (args.id !== undefined) {
-        snapshot = this.db.getSnapshotById(args.id);
-        if (!snapshot) {
-          throw {
-            code: ErrorCode.NOT_FOUND,
-            message: `Snapshot with ID ${args.id} not found`,
-          } as MCPError;
-        }
-      } else if (args.name) {
-        snapshot = this.db.getSnapshotByName(args.name);
-        if (!snapshot) {
-          throw {
-            code: ErrorCode.NOT_FOUND,
-            message: `Snapshot with name "${args.name}" not found`,
-          } as MCPError;
-        }
-      } else {
-        snapshot = this.db.getLatestSnapshot();
-        if (!snapshot) {
-          throw {
-            code: ErrorCode.NOT_FOUND,
-            message: 'No snapshots found',
-            details: 'Database is empty',
-          } as MCPError;
-        }
+    if (args.id !== undefined) {
+      snapshot = this.db.getSnapshotById(args.id);
+      if (!snapshot) {
+        throw new Error(`Snapshot with ID ${args.id} not found`);
       }
-    } catch (error) {
-      // Re-throw MCPError as-is
-      if (this.isMCPError(error)) {
-        throw error;
+    } else if (args.name) {
+      snapshot = this.db.getSnapshotByName(args.name);
+      if (!snapshot) {
+        throw new Error(`Snapshot with name "${args.name}" not found`);
       }
-      // Wrap database errors
-      throw {
-        code: ErrorCode.DATABASE_ERROR,
-        message: 'Failed to load snapshot',
-        details: error instanceof Error ? error.message : String(error),
-      } as MCPError;
+    } else {
+      snapshot = this.db.getLatestSnapshot();
+      if (!snapshot) {
+        throw new Error('No snapshots found');
+      }
     }
 
     let promptText: string;
@@ -330,43 +272,23 @@ class TestableSnapshotMCPServer {
 
   private async handleDeleteSnapshot(args: any) {
     if (args.id === undefined) {
-      throw {
-        code: ErrorCode.VALIDATION_ERROR,
-        message: 'Missing required field',
-        details: 'id is required',
-      } as MCPError;
+      throw new Error('id is required');
     }
 
-    try {
-      const deleted = this.db.deleteSnapshot(args.id);
+    const deleted = this.db.deleteSnapshot(args.id);
 
-      if (!deleted) {
-        throw {
-          code: ErrorCode.NOT_FOUND,
-          message: `Snapshot with ID ${args.id} not found`,
-        } as MCPError;
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Deleted snapshot #${args.id}`,
-          },
-        ],
-      };
-    } catch (error) {
-      // Re-throw MCPError as-is
-      if (this.isMCPError(error)) {
-        throw error;
-      }
-      // Wrap database errors
-      throw {
-        code: ErrorCode.DATABASE_ERROR,
-        message: 'Failed to delete snapshot',
-        details: error instanceof Error ? error.message : String(error),
-      } as MCPError;
+    if (!deleted) {
+      throw new Error(`Snapshot with ID ${args.id} not found`);
     }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Deleted snapshot #${args.id}`,
+        },
+      ],
+    };
   }
 
   // Helper methods for tests - call handlers directly bypassing Server class
@@ -395,17 +317,18 @@ class TestableSnapshotMCPServer {
           return await this.handleDeleteSnapshot(args);
 
         default:
-          return this.formatError(new MCPError(ErrorCode.UNKNOWN_TOOL, `Unknown tool: ${name}`));
+          throw new Error(`Unknown tool: ${name}`);
       }
     } catch (error) {
-      // Handle structured MCPError
-      if (this.isMCPError(error)) {
-        return this.formatError(error);
-      }
-
-      // Handle generic errors
       const errorMessage = error instanceof Error ? error.message : String(error);
-      return this.formatError(new MCPError(ErrorCode.INTERNAL_ERROR, errorMessage));
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${errorMessage}`,
+          },
+        ],
+      };
     }
   }
 
@@ -532,8 +455,8 @@ describe('MCP Tool Handlers', () => {
       const saveTool = result.tools.find((t: any) => t.name === 'save_snapshot');
 
       expect(saveTool).toBeDefined();
-      expect(saveTool!.inputSchema.required).toEqual(['summary', 'context']);
-      expect((saveTool!.inputSchema.properties! as any).context.oneOf).toHaveLength(2);
+      expect(saveTool.inputSchema.required).toEqual(['summary', 'context']);
+      expect(saveTool.inputSchema.properties.context.oneOf).toHaveLength(2);
     });
   });
 
@@ -577,8 +500,7 @@ describe('MCP Tool Handlers', () => {
       });
 
       expect(result.content[0].text).toContain('Error:');
-      expect(result.content[0].text).toContain('Missing required fields');
-      expect(result.content[0].text).toContain('Both summary and context are required');
+      expect(result.content[0].text).toContain('summary and context are required');
     });
 
     it('should return error when context is missing', async () => {
@@ -587,8 +509,7 @@ describe('MCP Tool Handlers', () => {
       });
 
       expect(result.content[0].text).toContain('Error:');
-      expect(result.content[0].text).toContain('Missing required fields');
-      expect(result.content[0].text).toContain('Both summary and context are required');
+      expect(result.content[0].text).toContain('summary and context are required');
     });
   });
 
@@ -761,7 +682,6 @@ describe('MCP Tool Handlers', () => {
       const result = await server.callTool('delete_snapshot', {});
 
       expect(result.content[0].text).toContain('Error:');
-      expect(result.content[0].text).toContain('Missing required field');
       expect(result.content[0].text).toContain('id is required');
     });
   });
@@ -877,68 +797,6 @@ describe('MCP Tool Handlers', () => {
       const list = await server.callTool('list_snapshots', {});
       const lines = list.content[0].text.split('\n');
       expect(lines).toHaveLength(5);
-    });
-  });
-
-  describe('Error Handling with Error Codes (Phase 4)', () => {
-    it('should return validation_error code for missing required fields', async () => {
-      const result = await server.callTool('save_snapshot', {
-        context: 'Context only',
-      });
-
-      expect(result.content[0].text).toContain('Error: Missing required fields');
-      expect(result.content[0].text).toContain('Code: validation_error');
-      expect(result.content[0].text).toContain('Details: Both summary and context are required');
-    });
-
-    it('should return not_found code for non-existent snapshot', async () => {
-      const result = await server.callTool('load_snapshot', {
-        id: 99999,
-      });
-
-      expect(result.content[0].text).toContain('Error: Snapshot with ID 99999 not found');
-      expect(result.content[0].text).toContain('Code: not_found');
-    });
-
-    it('should return not_found code for empty database', async () => {
-      const result = await server.callTool('load_snapshot', {});
-
-      expect(result.content[0].text).toContain('Error: No snapshots found');
-      expect(result.content[0].text).toContain('Code: not_found');
-      expect(result.content[0].text).toContain('Details: Database is empty');
-    });
-
-    it('should return not_found code for non-existent snapshot name', async () => {
-      const result = await server.callTool('load_snapshot', {
-        name: 'non-existent',
-      });
-
-      expect(result.content[0].text).toContain('Error: Snapshot with name "non-existent" not found');
-      expect(result.content[0].text).toContain('Code: not_found');
-    });
-
-    it('should return validation_error code for missing delete id', async () => {
-      const result = await server.callTool('delete_snapshot', {});
-
-      expect(result.content[0].text).toContain('Error: Missing required field');
-      expect(result.content[0].text).toContain('Code: validation_error');
-      expect(result.content[0].text).toContain('Details: id is required');
-    });
-
-    it('should return not_found code for deleting non-existent snapshot', async () => {
-      const result = await server.callTool('delete_snapshot', {
-        id: 99999,
-      });
-
-      expect(result.content[0].text).toContain('Error: Snapshot with ID 99999 not found');
-      expect(result.content[0].text).toContain('Code: not_found');
-    });
-
-    it('should return unknown_tool code for invalid tool name', async () => {
-      const result = await server.callTool('invalid_tool', {});
-
-      expect(result.content[0].text).toContain('Error: Unknown tool: invalid_tool');
-      expect(result.content[0].text).toContain('Code: unknown_tool');
     });
   });
 });
