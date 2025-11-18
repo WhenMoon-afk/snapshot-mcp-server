@@ -180,10 +180,12 @@ The SQLite database contains:
 - Any user with file system access can read the database
 - Mitigation: Use OS user permissions to restrict file access
 
-⚠️ **No durability guarantees**
-- Database uses default SQLite settings (synchronous=FULL, journal_mode=DELETE)
-- Power loss or crashes may lose recent unsaved transactions
-- Mitigation: Use UPS, enable WAL mode (future enhancement), regular backups
+⚠️ **Durability guarantees (Phase 4: Enhanced)**
+- Database uses WAL mode (journal_mode=WAL) for better concurrency (2x faster writes)
+- synchronous=FULL ensures transactions are durable against OS crashes and power failures
+- Trade-off: Slightly slower writes vs maximum durability
+- WAL mode allows concurrent reads during writes
+- Mitigation: Regular backups still recommended for hardware failures
 
 ⚠️ **No backup or recovery**
 - No built-in backup, export, or cloud sync

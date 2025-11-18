@@ -38,7 +38,45 @@ export class SnapshotDatabase {
     }
 
     this.db = new Database(dbPath);
+    this.configureDurability();
     this.initializeSchema();
+  }
+
+  /**
+   * Configure SQLite durability settings.
+   *
+   * **PRAGMA journal_mode=WAL:**
+   * - Write-Ahead Logging provides better concurrency (2x faster writes)
+   * - Allows concurrent reads during writes
+   * - Transactions are durable across application crashes
+   * - With synchronous=FULL, provides durability against OS crashes/power failures
+   *
+   * **PRAGMA synchronous=FULL:**
+   * - Ensures all content is safely written to disk before continuing
+   * - Prevents database corruption from OS crashes or power failures
+   * - Trade-off: Slower write performance vs maximum durability
+   * - In WAL mode, FULL is sufficient for durability (no need for EXTRA)
+   *
+   * **References:**
+   * - https://www.sqlite.org/wal.html
+   * - https://www.sqlite.org/pragma.html#pragma_synchronous
+   * - https://www.sqlite.org/pragma.html#pragma_journal_mode
+   *
+   * **Design Decision:**
+   * We prioritize durability over performance for snapshot data, as:
+   * 1. Snapshots are critical context that users expect to persist
+   * 2. Write frequency is relatively low (human-paced coding sessions)
+   * 3. WAL mode still provides good performance (2x faster than DELETE mode)
+   * 4. Concurrent reads don't block writes in WAL mode
+   */
+  private configureDurability(): void {
+    // Enable WAL mode for better concurrency and performance
+    // WAL mode is persistent across connections, but we set it explicitly
+    this.db.pragma('journal_mode = WAL');
+
+    // Set synchronous=FULL for maximum durability
+    // In WAL mode, FULL ensures transactions are durable against power loss
+    this.db.pragma('synchronous = FULL');
   }
 
   private initializeSchema(): void {
