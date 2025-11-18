@@ -941,4 +941,151 @@ describe('MCP Tool Handlers', () => {
       expect(result.content[0].text).toContain('Code: unknown_tool');
     });
   });
+
+  describe('Schema Stability (Phase 5)', () => {
+    /**
+     * These tests ensure MCP tool schemas remain stable for code-exec API generation.
+     * Breaking changes to schemas will cause these tests to fail, alerting developers
+     * to version the API appropriately.
+     */
+    it('should have stable tool count (4 tools)', async () => {
+      const tools = await server.listTools();
+      expect(tools.tools).toHaveLength(4);
+    });
+
+    it('should have stable tool names', async () => {
+      const tools = await server.listTools();
+      const toolNames = tools.tools.map((t) => t.name).sort();
+
+      expect(toolNames).toEqual([
+        'delete_snapshot',
+        'list_snapshots',
+        'load_snapshot',
+        'save_snapshot',
+      ]);
+    });
+
+    it('should have stable save_snapshot schema', async () => {
+      const tools = await server.listTools();
+      const saveTool = tools.tools.find((t) => t.name === 'save_snapshot');
+
+      expect(saveTool).toBeDefined();
+      expect(saveTool!.inputSchema).toEqual({
+        type: 'object',
+        properties: {
+          summary: {
+            type: 'string',
+            description: 'Summary of work accomplished',
+          },
+          context: {
+            oneOf: [
+              {
+                type: 'string',
+                description: 'Conversation context and state',
+              },
+              {
+                type: 'object',
+                description: 'Structured context',
+                properties: {
+                  files: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Files modified',
+                  },
+                  decisions: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Decisions made',
+                  },
+                  blockers: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Blockers',
+                  },
+                  code_state: {
+                    type: 'object',
+                    description: 'Code state',
+                  },
+                },
+              },
+            ],
+          },
+          name: {
+            type: 'string',
+            description: 'Optional name',
+          },
+          next_steps: {
+            type: 'string',
+            description: 'Next steps',
+          },
+        },
+        required: ['summary', 'context'],
+      });
+    });
+
+    it('should have stable load_snapshot schema', async () => {
+      const tools = await server.listTools();
+      const loadTool = tools.tools.find((t) => t.name === 'load_snapshot');
+
+      expect(loadTool).toBeDefined();
+      expect(loadTool!.inputSchema).toEqual({
+        type: 'object',
+        properties: {
+          id: {
+            type: 'number',
+            description: 'Snapshot ID',
+          },
+          name: {
+            type: 'string',
+            description: 'Snapshot name',
+          },
+        },
+      });
+    });
+
+    it('should have stable list_snapshots schema', async () => {
+      const tools = await server.listTools();
+      const listTool = tools.tools.find((t) => t.name === 'list_snapshots');
+
+      expect(listTool).toBeDefined();
+      expect(listTool!.inputSchema).toEqual({
+        type: 'object',
+        properties: {
+          limit: {
+            type: 'number',
+            description: 'Max snapshots (default: 100)',
+          },
+        },
+      });
+    });
+
+    it('should have stable delete_snapshot schema', async () => {
+      const tools = await server.listTools();
+      const deleteTool = tools.tools.find((t) => t.name === 'delete_snapshot');
+
+      expect(deleteTool).toBeDefined();
+      expect(deleteTool!.inputSchema).toEqual({
+        type: 'object',
+        properties: {
+          id: {
+            type: 'number',
+            description: 'Snapshot ID',
+          },
+        },
+        required: ['id'],
+      });
+    });
+
+    it('should have stable error response format', async () => {
+      const result = await server.callTool('save_snapshot', {
+        context: 'Context only',
+      });
+
+      // Error responses should have consistent structure
+      expect(result.content).toHaveLength(1);
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toMatch(/^Error:/);
+      expect(result.content[0].text).toContain('Code:');
+    });
+  });
 });
